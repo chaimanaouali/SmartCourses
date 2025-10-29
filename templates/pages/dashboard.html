@@ -1,0 +1,581 @@
+{% load static %}
+<!--
+=========================================================
+* Educational Hub Dashboard - AI-Powered Learning Platform
+=========================================================
+
+* Description: Multimodal educational platform with AI integration
+* Features: Voice questions, AI responses, quiz generation, face recognition
+* Built with Django 4.2 and Argon Dashboard template
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>
+    Educational Hub - AI Learning Platform
+  </title>
+  <!--     Fonts and icons     -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <!-- Nucleo Icons -->
+  <link href="https://demos.creative-tim.com/argon-dashboard-pro/assets/css/nucleo-icons.css" rel="stylesheet" />
+  <link href="https://demos.creative-tim.com/argon-dashboard-pro/assets/css/nucleo-svg.css" rel="stylesheet" />
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <!-- CSS Files -->
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}?v=2.1.0" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4 " id="sidenav-main">
+    <div class="sidenav-header">
+      <i class="fas fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link active" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload_course' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Upload Course</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'quiz_app:quiz_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">AI Quizzes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Quizzes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'profile' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Profile</span>
+          </a>
+        </li>
+        {% if not user.is_authenticated %}
+        <li class="nav-item mt-3">
+          <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Account</h6>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'signin' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-copy-04 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Sign In</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'signup' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-collection text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Sign Up</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    <div class="sidenav-footer mx-3">
+      <div class="card card-plain shadow-none" id="sidenavCard">
+        <img class="w-50 mx-auto" src="{% static 'img/illustrations/icon-documentation.svg' %}" alt="sidebar_illustration">
+        <div class="card-body text-center p-3 w-100 pt-0">
+          <div class="docs-info">
+            <h6 class="mb-0">AI-Powered Learning</h6>
+            <p class="text-xs font-weight-bold mb-0">Voice questions, AI responses</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  
+  <main class="main-content position-relative border-radius-lg">
+    <!-- Navbar -->
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Dashboard</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">Educational Hub Dashboard</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <div class="input-group">
+              <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
+              <input type="text" class="form-control" placeholder="Search courses...">
+            </div>
+          </div>
+          <ul class="navbar-nav justify-content-end">
+            {% if user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if user_profile.profile_image %}
+                <img src="{{ user_profile.profile_image.url }}" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                {% else %}
+                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                  <i class="fa fa-user text-dark" style="font-size: 14px;"></i>
+                </div>
+                {% endif %}
+                <span class="d-sm-inline d-none text-white font-weight-bold">{{ user.username }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                  <i class="fa fa-user me-2"></i>Profile
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="showSettings()">
+                  <i class="fa fa-cog me-2"></i>Settings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                  <i class="fa fa-sign-out me-2"></i>Logout
+                </a></li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item d-flex align-items-center">
+              <a href="{% url 'signin' %}" class="nav-link text-white font-weight-bold px-0">
+                <i class="fa fa-user me-sm-1"></i>
+                <span class="d-sm-inline d-none">Sign In</span>
+              </a>
+            </li>
+            {% endif %}
+            <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
+              <a href="javascript:;" class="nav-link text-white p-0" id="iconNavbarSidenav">
+                <div class="sidenav-toggler-inner">
+                  <i class="sidenav-toggler-line bg-white"></i>
+                  <i class="sidenav-toggler-line bg-white"></i>
+                  <i class="sidenav-toggler-line bg-white"></i>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <!-- End Navbar -->
+    
+    <div class="container-fluid py-4">
+      <div class="row">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Courses</p>
+                    <h5 class="font-weight-bolder">
+                      {{ courses|length }}
+                    </h5>
+                    <p class="mb-0">
+                      <span class="text-success text-sm font-weight-bolder">+{{ courses|length }}</span>
+                      available courses
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+                    <i class="ni ni-books text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">AI Questions</p>
+                    <h5 class="font-weight-bolder">
+                      {% if user.is_authenticated %}{{ user.audio_questions.count }}{% else %}0{% endif %}
+                    </h5>
+                    <p class="mb-0">
+                      <span class="text-info text-sm font-weight-bolder">Voice-powered</span>
+                      AI responses
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
+                    <i class="ni ni-microphone text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Quizzes Taken</p>
+                    <h5 class="font-weight-bolder">
+                      {% if user.is_authenticated %}{{ user.quiz_attempts.count }}{% else %}0{% endif %}
+                    </h5>
+                    <p class="mb-0">
+                      <span class="text-success text-sm font-weight-bolder">AI-Generated</span>
+                      quizzes
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+                    <i class="ni ni-paper-diploma text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-8">
+                  <div class="numbers">
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Learning Score</p>
+                    <h5 class="font-weight-bolder">
+                      {% if user.is_authenticated %}85%{% else %}0%{% endif %}
+                    </h5>
+                    <p class="mb-0">
+                      <span class="text-warning text-sm font-weight-bolder">+5%</span>
+                      this week
+                    </p>
+                  </div>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+                    <i class="ni ni-chart-bar-32 text-lg opacity-10" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Voice Question Interface -->
+      {% if user.is_authenticated %}
+      <div class="row mt-4">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-header pb-0 pt-3 bg-transparent">
+              <h6 class="text-capitalize">Ask AI with Voice</h6>
+              <p class="text-sm mb-0">
+                <i class="fa fa-microphone text-primary"></i>
+                <span class="font-weight-bold">Voice-powered</span> AI learning assistant
+              </p>
+            </div>
+            <div class="card-body p-3">
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="form-group">
+                    <label class="form-control-label">Record your question</label>
+                    <div class="d-flex align-items-center">
+                      <button id="recordBtn" class="btn btn-primary me-3">
+                        <i class="ni ni-microphone me-2"></i>Record Question
+                      </button>
+                      <button id="stopBtn" class="btn btn-danger me-3" disabled>
+                        <i class="ni ni-button-power me-2"></i>Stop Recording
+                      </button>
+                      <span id="recordingStatus" class="text-muted">Click to start recording</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="form-control-label">Select Course (Optional)</label>
+                    <select id="courseSelect" class="form-control">
+                      <option value="">General Question</option>
+                      {% for course in courses %}
+                      <option value="{{ course.id }}">{{ course.title }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div id="questionResult" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                  <h6>Your Question:</h6>
+                  <p id="questionText"></p>
+                </div>
+                <div class="alert alert-success">
+                  <h6>AI Response:</h6>
+                  <p id="aiResponse"></p>
+                </div>
+                <div id="generatedImage" class="text-center"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Available Courses -->
+      <div class="row mt-4">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-header pb-0 p-3">
+              <div class="d-flex justify-content-between">
+                <h6 class="mb-2">Available Courses</h6>
+                {% if user.is_authenticated %}
+                <a href="{% url 'upload_course' %}" class="btn btn-primary btn-sm">Upload New Course</a>
+                {% endif %}
+              </div>
+            </div>
+            <div class="row p-3">
+              {% for course in courses %}
+              <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h6 class="card-title">{{ course.title }}</h6>
+                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted">By {{ course.instructor.username }}</small>
+                      <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View Course</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-12">
+                <div class="text-center py-4">
+                  <i class="ni ni-books text-muted" style="font-size: 3rem;"></i>
+                  <h5 class="text-muted mt-3">No courses available yet</h5>
+                  <p class="text-muted">Be the first to upload a course!</p>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer class="footer pt-3">
+        <div class="container-fluid">
+          <div class="row align-items-center justify-content-lg-between">
+            <div class="col-lg-6 mb-lg-0 mb-4">
+              <div class="copyright text-center text-sm text-muted text-lg-start">
+                © <script>document.write(new Date().getFullYear())</script>,
+                made with <i class="fa fa-heart"></i> by
+                <a href="#" class="font-weight-bold" target="_blank">Educational Hub Team</a>
+                for better learning.
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <ul class="nav nav-footer justify-content-center justify-content-lg-end">
+                <li class="nav-item">
+                  <a href="#" class="nav-link text-muted" target="_blank">About Us</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" class="nav-link text-muted" target="_blank">Blog</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" class="nav-link text-muted" target="_blank">License</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </main>
+  
+  <!--   Core JS Files   -->
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  
+  <!-- Voice Recording Script -->
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const questionResult = document.getElementById('questionResult');
+    const questionText = document.getElementById('questionText');
+    const aiResponse = document.getElementById('aiResponse');
+    const generatedImage = document.getElementById('generatedImage');
+    const courseSelect = document.getElementById('courseSelect');
+    
+    recordBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = event => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          uploadAudioQuestion(audioBlob);
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        recordingStatus.textContent = 'Recording... Click stop when done';
+        
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        alert('Error accessing microphone. Please check permissions.');
+      }
+    }
+    
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        recordingStatus.textContent = 'Processing your question...';
+      }
+    }
+    
+    async function uploadAudioQuestion(audioBlob) {
+      const formData = new FormData();
+      formData.append('audio_file', audioBlob, 'question.wav');
+      
+      const courseId = courseSelect.value;
+      if (courseId) {
+        formData.append('course_id', courseId);
+      }
+      
+      try {
+        const response = await fetch('/api/audio-question/', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          recordingStatus.textContent = 'Question uploaded successfully!';
+          // Poll for results
+          pollQuestionStatus(data.question_id);
+        } else {
+          recordingStatus.textContent = 'Error uploading question: ' + data.error;
+        }
+        
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        recordingStatus.textContent = 'Error uploading question';
+      }
+    }
+    
+    async function pollQuestionStatus(questionId) {
+      const maxAttempts = 30; // 30 seconds max
+      let attempts = 0;
+      
+      const poll = async () => {
+        try {
+          const response = await fetch(`/api/audio-question/${questionId}/status/`);
+          const data = await response.json();
+          
+          if (data.is_processed) {
+            questionText.textContent = data.question_text;
+            aiResponse.textContent = data.ai_response;
+            
+            if (data.generated_image) {
+              generatedImage.innerHTML = `<img src="${data.generated_image}" class="img-fluid" alt="Generated illustration">`;
+            }
+            
+            questionResult.style.display = 'block';
+            recordingStatus.textContent = 'Question processed successfully!';
+            return;
+          }
+          
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 1000);
+          } else {
+            recordingStatus.textContent = 'Processing timeout. Please try again.';
+          }
+          
+        } catch (error) {
+          console.error('Error polling question status:', error);
+          recordingStatus.textContent = 'Error checking question status';
+        }
+      };
+      
+      poll();
+    }
+    
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+  
+  <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
+  <script src="{% static 'js/argon-dashboard.min.js' %}?v=2.1.0"></script>
+  
+  <script>
+    function showSettings() {
+      alert('Settings functionality coming soon!');
+    }
+  </script>
+</body>
+
+</html>

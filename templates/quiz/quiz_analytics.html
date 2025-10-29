@@ -1,0 +1,407 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Quiz Analytics - Educational Hub</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-icons.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-svg.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'quiz_app:quiz_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Quizzes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{% url 'quiz_app:quiz_analytics' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-chart-bar-32 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Analytics</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'profile' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Profile</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Quiz Analytics</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">AI-Powered Learning Analytics</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <button class="btn btn-outline-white btn-sm" onclick="exportAnalytics()">
+              <i class="ni ni-send me-1"></i>
+              Export Report
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <!-- Overview Stats -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-gradient-primary">
+            <div class="card-body text-center">
+              <div class="icon icon-shape icon-lg bg-white shadow mx-auto mb-3">
+                <i class="ni ni-paper-diploma text-primary"></i>
+              </div>
+              <h4 class="text-white mb-0">{{ total_quizzes }}</h4>
+              <p class="text-white opacity-8 mb-0">Quizzes Taken</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-gradient-success">
+            <div class="card-body text-center">
+              <div class="icon icon-shape icon-lg bg-white shadow mx-auto mb-3">
+                <i class="ni ni-trophy text-success"></i>
+              </div>
+              <h4 class="text-white mb-0">{{ total_attempts }}</h4>
+              <p class="text-white opacity-8 mb-0">Total Attempts</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-gradient-info">
+            <div class="card-body text-center">
+              <div class="icon icon-shape icon-lg bg-white shadow mx-auto mb-3">
+                <i class="ni ni-chart-bar-32 text-info"></i>
+              </div>
+              <h4 class="text-white mb-0">{{ average_score }}%</h4>
+              <p class="text-white opacity-8 mb-0">Average Score</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-gradient-warning">
+            <div class="card-body text-center">
+              <div class="icon icon-shape icon-lg bg-white shadow mx-auto mb-3">
+                <i class="ni ni-bulb-61 text-warning"></i>
+              </div>
+              <h4 class="text-white mb-0">AI</h4>
+              <p class="text-white opacity-8 mb-0">Powered Analysis</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Trends -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header pb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">📈 Performance Trends</h6>
+                <div class="dropdown">
+                  <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Time Range
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Last 7 days</a></li>
+                    <li><a class="dropdown-item" href="#">Last 30 days</a></li>
+                    <li><a class="dropdown-item" href="#">All time</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="text-center py-4">
+                    <i class="ni ni-chart-bar-32 text-primary" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3 mb-0">Performance Chart</h6>
+                    <p class="text-sm text-muted">Your learning progress over time</p>
+                    <!-- Chart would be implemented here with Chart.js or similar -->
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="mb-3">Key Insights</h6>
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ni ni-check-bold text-success me-2"></i>
+                    <span class="text-sm">Consistent improvement</span>
+                  </div>
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ni ni-bulb-61 text-warning me-2"></i>
+                    <span class="text-sm">Focus on advanced topics</span>
+                  </div>
+                  <div class="d-flex align-items-center mb-2">
+                    <i class="ni ni-send text-info me-2"></i>
+                    <span class="text-sm">Ready for next level</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Analytics -->
+      <div class="row">
+        <div class="col-md-8">
+          <!-- Quiz Performance Table -->
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">Quiz Performance Details</h6>
+            </div>
+            <div class="card-body px-0 pt-0 pb-2">
+              {% if user_analytics %}
+                <div class="table-responsive p-0">
+                  <table class="table align-items-center mb-0">
+                    <thead>
+                      <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Quiz</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Attempts</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Best Score</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Average</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Improvement</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for analytics in user_analytics %}
+                      <tr>
+                        <td>
+                          <div class="d-flex px-2 py-1">
+                            <div class="d-flex flex-column justify-content-center">
+                              <h6 class="mb-0 text-sm">{{ analytics.quiz.title }}</h6>
+                              <p class="text-xs text-secondary mb-0">{{ analytics.quiz.course.title }}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="align-middle text-center">
+                          <span class="text-secondary text-xs font-weight-bold">{{ analytics.total_attempts }}</span>
+                        </td>
+                        <td class="align-middle text-center">
+                          <span class="badge badge-sm bg-gradient-{% if analytics.best_score >= 90 %}success{% elif analytics.best_score >= 70 %}warning{% else %}danger{% endif %}">
+                            {{ analytics.best_score|floatformat:1 }}%
+                          </span>
+                        </td>
+                        <td class="align-middle text-center">
+                          <span class="text-secondary text-xs font-weight-bold">{{ analytics.average_score|floatformat:1 }}%</span>
+                        </td>
+                        <td class="align-middle text-center">
+                          <span class="text-{% if analytics.improvement_rate > 0 %}success{% else %}danger{% endif %} text-xs font-weight-bold">
+                            {% if analytics.improvement_rate > 0 %}+{% endif %}{{ analytics.improvement_rate|floatformat:1 }}%
+                          </span>
+                        </td>
+                        <td class="align-middle text-center">
+                          {% if analytics.best_score >= analytics.quiz.passing_score %}
+                          <span class="badge badge-sm bg-gradient-success">Passed</span>
+                          {% else %}
+                          <span class="badge badge-sm bg-gradient-warning">In Progress</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-center py-4">
+                  <div class="icon icon-shape icon-lg bg-gradient-secondary shadow mx-auto mb-3">
+                    <i class="ni ni-chart-bar-32 text-white"></i>
+                  </div>
+                  <h6 class="mb-0">No Analytics Data</h6>
+                  <p class="text-sm text-muted">Take some quizzes to see your performance analytics</p>
+                  <a href="{% url 'quiz_app:quiz_list' %}" class="btn btn-primary btn-sm mt-2">Take a Quiz</a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Recent Attempts -->
+          <div class="card">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">Recent Quiz Attempts</h6>
+            </div>
+            <div class="card-body">
+              {% if recent_attempts %}
+                {% for attempt in recent_attempts %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 class="mb-0">{{ attempt.quiz.title }}</h6>
+                    <p class="text-sm text-muted mb-0">{{ attempt.completed_at|date:"M d, Y H:i" }}</p>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge badge-sm bg-gradient-{% if attempt.score >= 90 %}success{% elif attempt.score >= 70 %}warning{% else %}danger{% endif %}">
+                      {{ attempt.score|floatformat:1 }}%
+                    </span>
+                    <p class="text-xs text-muted mb-0">{{ attempt.time_taken|default:"N/A" }} min</p>
+                  </div>
+                </div>
+                {% if not forloop.last %}<hr class="horizontal dark">{% endif %}
+                {% endfor %}
+              {% else %}
+                <div class="text-center py-3">
+                  <p class="text-muted mb-0">No recent attempts</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <!-- AI Insights -->
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">🤖 AI Learning Insights</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <h6 class="text-success mb-2">Strengths</h6>
+                <ul class="list-unstyled">
+                  <li class="mb-1">
+                    <i class="ni ni-check-bold text-success me-2"></i>
+                    Strong conceptual understanding
+                  </li>
+                  <li class="mb-1">
+                    <i class="ni ni-check-bold text-success me-2"></i>
+                    Good retention rate
+                  </li>
+                  <li class="mb-1">
+                    <i class="ni ni-check-bold text-success me-2"></i>
+                    Consistent performance
+                  </li>
+                </ul>
+              </div>
+              
+              <div class="mb-3">
+                <h6 class="text-warning mb-2">Areas to Focus</h6>
+                <ul class="list-unstyled">
+                  <li class="mb-1">
+                    <i class="ni ni-bulb-61 text-warning me-2"></i>
+                    Advanced problem solving
+                  </li>
+                  <li class="mb-1">
+                    <i class="ni ni-bulb-61 text-warning me-2"></i>
+                    Complex concepts
+                  </li>
+                </ul>
+              </div>
+              
+              <div class="mb-3">
+                <h6 class="text-info mb-2">Recommendations</h6>
+                <ul class="list-unstyled">
+                  <li class="mb-1">
+                    <i class="ni ni-send text-info me-2"></i>
+                    Try advanced difficulty quizzes
+                  </li>
+                  <li class="mb-1">
+                    <i class="ni ni-send text-info me-2"></i>
+                    Review course materials
+                  </li>
+                  <li class="mb-1">
+                    <i class="ni ni-send text-info me-2"></i>
+                    Practice more frequently
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Learning Goals -->
+          <div class="card">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">🎯 Learning Goals</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-sm">Complete 10 quizzes</span>
+                  <span class="text-sm font-weight-bold">{{ total_quizzes }}/10</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-gradient-primary" role="progressbar" style="width: {% widthratio total_quizzes 10 100 %}%"></div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-sm">Achieve 80% average</span>
+                  <span class="text-sm font-weight-bold">{{ average_score }}%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-gradient-{% if average_score >= 80 %}success{% else %}warning{% endif %}" role="progressbar" style="width: {% widthratio average_score 100 100 %}%"></div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-sm">Study 5 hours this week</span>
+                  <span class="text-sm font-weight-bold">3.5/5 hrs</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-gradient-info" role="progressbar" style="width: 70%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  
+  <script>
+    function exportAnalytics() {
+      // Implement analytics export functionality
+      alert('Analytics export feature coming soon!');
+    }
+  </script>
+</body>
+</html>
+
+
+
+

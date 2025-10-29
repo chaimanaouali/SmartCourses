@@ -1,0 +1,342 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Profile - Educational Hub</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-icons.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-svg.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload_course' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Upload Course</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{% url 'profile' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Profile</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Profile</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">User Profile</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <div class="input-group">
+              <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
+              <input type="text" class="form-control" placeholder="Type here...">
+            </div>
+          </div>
+          <ul class="navbar-nav justify-content-end">
+            {% if user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if user_profile.profile_image %}
+                <img src="{{ user_profile.profile_image.url }}" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                {% else %}
+                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                  <i class="fa fa-user text-dark" style="font-size: 14px;"></i>
+                </div>
+                {% endif %}
+                <span class="d-sm-inline d-none text-white font-weight-bold">{{ user.username }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                  <i class="fa fa-user me-2"></i>Profile
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="showSettings()">
+                  <i class="fa fa-cog me-2"></i>Settings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                  <i class="fa fa-sign-out me-2"></i>Logout
+                </a></li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item d-flex align-items-center">
+              <a href="{% url 'signin' %}" class="nav-link text-white font-weight-bold px-0">
+                <i class="fa fa-user me-sm-1"></i>
+                <span class="d-sm-inline d-none">Sign In</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <!-- Messages -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+      
+      <div class="row">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">Profile Information</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="text-center">
+                    {% if user_profile.profile_image %}
+                    <img src="{{ user_profile.profile_image.url }}" class="rounded-circle mb-3" width="150" height="150" alt="Profile Image">
+                    {% else %}
+                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 150px; height: 150px;">
+                      <i class="ni ni-single-02 text-white" style="font-size: 4rem;"></i>
+                    </div>
+                    {% endif %}
+                    <h5 class="mb-0">{{ user.username }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="username" class="form-control-label">Username</label>
+                          <input class="form-control" type="text" name="username" id="username" value="{{ user.username }}" readonly>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="email" class="form-control-label">Email</label>
+                          <input class="form-control" type="email" name="email" id="email" value="{{ user.email }}">
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="first_name" class="form-control-label">First Name</label>
+                          <input class="form-control" type="text" name="first_name" id="first_name" value="{{ user.first_name }}">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="last_name" class="form-control-label">Last Name</label>
+                          <input class="form-control" type="text" name="last_name" id="last_name" value="{{ user.last_name }}">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="preferred_language" class="form-control-label">Preferred Language</label>
+                          <select class="form-control" name="preferred_language" id="preferred_language">
+                            <option value="en" {% if user_profile.preferred_language == 'en' %}selected{% endif %}>English</option>
+                            <option value="fr" {% if user_profile.preferred_language == 'fr' %}selected{% endif %}>French</option>
+                            <option value="es" {% if user_profile.preferred_language == 'es' %}selected{% endif %}>Spanish</option>
+                            <option value="de" {% if user_profile.preferred_language == 'de' %}selected{% endif %}>German</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="profile_image" class="form-control-label">Profile Image</label>
+                          <input class="form-control" type="file" name="profile_image" id="profile_image" accept="image/*">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="bio" class="form-control-label">Bio</label>
+                      <textarea class="form-control" name="bio" id="bio" rows="3" placeholder="Tell us about yourself...">{{ user_profile.bio }}</textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                      <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">Learning Statistics</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="card bg-gradient-primary">
+                    <div class="card-body text-center">
+                      <h4 class="text-white">{{ enrolled_courses.count }}</h4>
+                      <p class="text-white mb-0">Enrolled Courses</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card bg-gradient-success">
+                    <div class="card-body text-center">
+                      <h4 class="text-white">{{ created_courses.count }}</h4>
+                      <p class="text-white mb-0">Created Courses</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card bg-gradient-info">
+                    <div class="card-body text-center">
+                      <h4 class="text-white">{{ audio_questions.count }}</h4>
+                      <p class="text-white mb-0">Questions Asked</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card bg-gradient-warning">
+                    <div class="card-body text-center">
+                      <h4 class="text-white">{{ engagement_sessions.count }}</h4>
+                      <p class="text-white mb-0">Learning Sessions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header pb-0">
+                  <h6 class="mb-0">Enrolled Courses</h6>
+                </div>
+                <div class="card-body">
+                  {% for course in enrolled_courses %}
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h6 class="mb-0">{{ course.title }}</h6>
+                      <small class="text-muted">By {{ course.instructor.username }}</small>
+                    </div>
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                  </div>
+                  {% empty %}
+                  <p class="text-muted">No enrolled courses yet.</p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header pb-0">
+                  <h6 class="mb-0">Created Courses</h6>
+                </div>
+                <div class="card-body">
+                  {% for course in created_courses %}
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h6 class="mb-0">{{ course.title }}</h6>
+                      <small class="text-muted">{{ course.students.count }} students</small>
+                    </div>
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                  </div>
+                  {% empty %}
+                  <p class="text-muted">No created courses yet.</p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  
+  <script>
+    // Profile image preview
+    document.getElementById('profile_image').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          // Update the profile image display
+          const profileImg = document.querySelector('.rounded-circle');
+          if (profileImg) {
+            profileImg.src = e.target.result;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const email = document.getElementById('email').value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      
+      if (email && !emailRegex.test(email)) {
+        e.preventDefault();
+        alert('Please enter a valid email address.');
+        return false;
+      }
+    });
+    
+    function showSettings() {
+      alert('Settings functionality coming soon!');
+    }
+  </script>
+</body>
+</html>
+

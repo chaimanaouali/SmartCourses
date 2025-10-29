@@ -1,179 +1,280 @@
-# [Argon Dashboard 3](http://demos.creative-tim.com/argon-dashboard/pages/dashboard.html?ref=readme-ad2) [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter)](https://twitter.com/intent/tweet?url=https://www.creative-tim.com/product/argon-dashboard&text=Check%20Soft%20UI%20Dashboard%20made%20by%20@CreativeTim%20#webdesign%20#dashboard%20#softdesign%20#html%20https://www.creative-tim.com/product/argon-dashboard) [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/FhCJCaHdQa)
+# Educational Hub - AI-Powered Learning Platform
 
-![version](https://img.shields.io/badge/version-2.1.0-blue.svg) [![GitHub issues open](https://img.shields.io/github/issues/creativetimofficial/argon-dashboard.svg)](https://github.com/creativetimofficial/argon-dashboard/issues?q=is%3Aopen+is%3Aissue) [![GitHub issues closed](https://img.shields.io/github/issues-closed-raw/creativetimofficial/argon-dashboard.svg)](https://github.com/creativetimofficial/argon-dashboard/issues?q=is%3Aissue+is%3Aclosed)
+A comprehensive multimodal educational platform built with Django 4.2 and integrated with the Argon Dashboard template. This platform provides AI-powered features including voice questions, automatic quiz generation, facial recognition authentication, and real-time engagement tracking.
 
-![Image](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/argon-dashboard-2.jpg)
+## 🚀 Features
 
-Most complex and innovative Dashboard Made by [Creative Tim](https://creative-tim.com/). Check our latest Free Bootstrap 5 Dashboard.
+### Core Educational Features
+- **Course Management**: Upload and manage educational content (audio, PDF)
+- **AI-Powered Transcription**: Automatic speech-to-text using Whisper
+- **Smart Quiz Generation**: AI-generated quizzes from course content
+- **Voice Questions**: Students can ask questions using voice input
+- **Real-time AI Responses**: Get instant AI-generated answers and explanations
 
-Designed for those who like bold elements and beautiful websites. Made of hundred of elements, designed blocks and fully coded pages, Argon Dashboard 2 is ready to help you create stunning websites and webapps.
+### AI Integrations
+- **Whisper Integration**: Speech-to-text transcription for audio content
+- **Gemini AI**: Text generation for responses and summaries
+- **Hugging Face**: Image generation for educational illustrations
+- **Face Recognition**: User authentication and engagement detection
 
-We created many examples for pages like Sign In, Profile and so on. Just choose between a Basic Design, an illustration or a cover and you are good to go!
+### Advanced Features
+- **WebSocket Support**: Real-time interactions and live updates
+- **Engagement Tracking**: Monitor student attention and participation
+- **Analytics Dashboard**: Track learning progress and quiz performance
+- **Responsive Design**: Beautiful UI using Argon Dashboard template
 
-**Fully Coded Elements**
+## 🛠️ Technology Stack
 
-Argon Dashboard 3 is built with over 70 frontend individual elements, like buttons, inputs, navbars, navtabs, cards or alerts, giving you the freedom of choosing and combining. All components can take variations in colour, that you can easily modify using SASS files and classes.
+- **Backend**: Django 4.2, Django REST Framework
+- **Frontend**: Bootstrap 5, Argon Dashboard Template
+- **Real-time**: Django Channels, WebSockets
+- **AI Services**: 
+  - Whisper (Speech-to-Text)
+  - Google Gemini (Text Generation)
+  - Hugging Face (Image Generation)
+  - OpenCV + Face Recognition
+- **Database**: SQLite (development), PostgreSQL (production ready)
+- **Task Queue**: Celery with Redis
+- **Authentication**: Django Auth + Face Recognition
 
-You will save a lot of time going from prototyping to full-functional code, because all elements are implemented.
-This Free Bootstrap 5 Dashboard is coming with prebuilt design blocks, so the development process is seamless,
-switching from our pages to the real website is very easy to be done.
+## 📋 Prerequisites
 
-View [all components here](https://www.creative-tim.com/learning-lab/bootstrap/alerts/argon-dashboard?ref=readme-ad2).
+- Python 3.14+
+- pip (Python package manager)
+- Redis (for Celery and Channels)
+- Git
 
-**Documentation built by Developers**
+## 🚀 Installation
 
-Each element is well presented in a very complex documentation.
-You can read more about the <a href="https://www.creative-tim.com/learning-lab/bootstrap/overview/argon-dashboard" target="_blank">documentation here</a>.
-
-**Example Pages**
-
-If you want to get inspiration or just show something directly to your clients,
-you can jump start your development with our pre-built example pages. You will be able
-to quickly set up the basic structure for your web project.
-View <a href="https://demos.creative-tim.com/argon-dashboard/pages/dashboard.html" target="_blank">example pages here</a>.
-
-## Table of Contents
-
-- [Demo](#demo)
-- [Quick Start](#quick-start)
-- [Documentation](#documentation)
-- [File Structure](#file-structure)
-- [Browser Support](#browser-support)
-- [Resources](#resources)
-- [Reporting Issues](#reporting-issues)
-- [Technical Support or Questions](#technical-support-or-questions)
-- [Licensing](#licensing)
-- [Useful Links](#useful-links)
-
-## Versions
-
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/html-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/react-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard-react)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/vue-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/vue-argon-dashboard)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/angular-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard-angular)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/aspnet-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard-asp-net)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/nodejs-logo.jpg" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard-nodejs)
-[<img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/laravel_logo.png" width="60" height="60" />](https://www.creative-tim.com/product/argon-dashboard-laravel)
-
-| HTML                                                                                                                                                                                            | React                                                                                                                                                                                                              | Vue                                                                                                                                                                                                         | Angular                                                                                                                                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Argon Dashboard HTML](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/argon-dashboard.jpg)](https://www.creative-tim.com/product/argon-dashboard) | [![Argon Dashboard React](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-react/argon-dashboard-react.jpg)](https://www.creative-tim.com/product/argon-dashboard-react) | [![Vue Argon Dashboard ](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/vue-argon-dashboard/vue-argon-dashboard.jpg)](https://www.creative-tim.com/product/vue-argon-dashboard) | [![Argon Dashboard Angular](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-angular/argon-dashboard-angular.jpg)](https://www.creative-tim.com/product/argon-dashboard-angular) |
-
-| Asp.net                                                                                                                                                                                                                  | Node.js                                                                                                                                                                                                                 | Laravel                                                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Argon Dashboard Asp.net](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-aspnet/argon-dashboard-aspnet.jpg)](https://www.creative-tim.com/product/argon-dashboard-asp-net) | [![Argon Dashboard Node.js](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-nodejs/argon-dashboard-nodejs.jpg)](https://www.creative-tim.com/product/argon-dashboard-nodejs) | [![Argon Dashboard Laravel](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-laravel/argon-dashboard-laravel.jpg)](https://www.creative-tim.com/product/argon-dashboard-laravel) |
-
-## Demo
-
-- [Dashboard page](https://demos.creative-tim.com/argon-dashboard/pages/dashboard)
-- [User profile page](https://demos.creative-tim.com/argon-dashboard/pages/profile)
-- [Tables page ](https://demos.creative-tim.com/argon-dashboard/pages/tables)
-- [RTL Page](https://demos.creative-tim.com/argon-dashboard/pages/rtl)
-- [Sign Up page](https://demos.creative-tim.com/argon-dashboard/pages/sign-up)
-- [Login page](https://demos.creative-tim.com/argon-dashboard/pages/sign-in)
-
-| Dashboard page                                                                                                                                                                                | User profile page                                                                                                                                                                                 | Tables page                                                                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [![Dashboard page](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/dashboard.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/dashboard) | [![User profile page](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/profile.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/profile.html) | [![Tables pages](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/tables.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/tables.html) |
-
-| RTL page                                                                                                                                                                         | Sign Up page                                                                                                                                                                                | Login page                                                                                                                                                                                |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![RTL page](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/rtl.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/rtl.html) | [![Sign Up page](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/signup.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/sign-up.html) | [![Login page](https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard/signin.jpg)](https://demos.creative-tim.com/argon-dashboard/pages/sign-in.html) |
-
-## Download and Installation
-
-- [Download from Github](https://github.com/creativetimofficial/argon-dashboard/archive/master.zip)
-- [Download from Creative Tim](https://www.creative-tim.com/product/argon-dashboard)
-
-- Install with Npm: `npm i @creative-tim-official/argon-dashboard-free`
-
-- Install with Yarn: `yarn add @creative-tim-official/argon-dashboard-free`
-
-- Install with Composer: `composer create-project creativetimofficial/argon-dashboard-free`
-
-- Clone from Github: `git clone https://github.com/creativetimofficial/argon-dashboard.git`
-
-## Documentation
-
-The documentation for the Argon Dashboard is hosted at our [website](https://www.creative-tim.com/learning-lab/bootstrap/overview/argon-dashboard).
-
-## File Structure
-
-Within the download you'll find the following directories and files:
-
-```
-argon-dashboard
-  ├── assets
-  │   ├── css
-  │   ├── fonts
-  │   ├── img
-  │   ├── js
-  │   │   ├── core
-  │   │   ├── plugins
-  │   │   └── argon-dashboard.js
-  │   │   └── argon-dashboard.js.map
-  │   │   └── argon-dashboard.min.js
-  │   └── scss
-  │       ├── argon-dashboard
-  │       └── argon-dashboard.scss
-  ├── docs
-  │   ├── documentation.html
-  ├── pages
-  ├── CHANGELOG.md
-  ├── gulpfile.js
-  ├── package.json
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd argon-dashboard-master
 ```
 
-## Browser Support
+### 2. Create Virtual Environment
+```bash
+python -m venv venv
+# On Windows
+venv\Scripts\activate
+# On macOS/Linux
+source venv/bin/activate
+```
 
-At present, we officially aim to support the last two versions of the following browsers:
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-<img src="https://s3.amazonaws.com/creativetim_bucket/github/browser/chrome.png" width="64" height="64"> <img src="https://s3.amazonaws.com/creativetim_bucket/github/browser/firefox.png" width="64" height="64"> <img src="https://s3.amazonaws.com/creativetim_bucket/github/browser/edge.png" width="64" height="64"> <img src="https://s3.amazonaws.com/creativetim_bucket/github/browser/safari.png" width="64" height="64"> <img src="https://s3.amazonaws.com/creativetim_bucket/github/browser/opera.png" width="64" height="64">
+### 4. Environment Configuration
+Copy the example environment file and configure your API keys:
+```bash
+cp env.example .env
+```
 
-## Resources
+Edit `.env` file with your API keys:
+```env
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
 
-- Demo: <https://demos.creative-tim.com/argon-dashboard>
-- Documentation: <https://www.creative-tim.com/learning-lab/bootstrap/overview/argon-dashboard>
-- License Agreement: <https://www.creative-tim.com/license>
-- Support: <https://www.creative-tim.com/contact-us>
-- Issues: [Github Issues Page](https://github.com/creativetimofficial/argon-dashboard/issues)
+# AI API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 
-## Reporting Issues
+# Database (Optional - defaults to SQLite)
+# DATABASE_URL=postgresql://user:password@localhost:5432/educational_hub
 
-We use GitHub Issues as the official bug tracker for the Argon Dashboard. Here are some advices for our users that want to report an issue:
+# Redis (for Celery and Channels)
+REDIS_URL=redis://localhost:6379
+```
 
-1. Make sure that you are using the latest version of the Argon Dashboard. Check the CHANGELOG from your copy on our [website](https://www.creative-tim.com).
-2. Providing us reproducible steps for the issue will shorten the time it takes for it to be fixed.
-3. Some issues may be browser specific, so specifying in what browser you encountered the issue might help.
+### 5. Database Setup
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+```
 
-## Licensing
+### 6. Collect Static Files
+```bash
+python manage.py collectstatic
+```
 
-- Copyright &copy; 2022 Creative Tim (https://www.creative-tim.com)
-- Licensed under MIT (https://github.com/creativetimofficial/argon-dashboard/blob/master/LICENSE.md)
+## 🎯 Usage
 
-## Useful Links
+### Starting the Development Server
+```bash
+python manage.py runserver
+```
 
-- [Tutorials](https://www.youtube.com/channel/UCVyTG4sCw-rOvB9oHkzZD1w)
-- [Affiliate Program](https://www.creative-tim.com/affiliates/new?ref=mk-github-readme) (earn money)
-- [Blog Creative Tim](http://blog.creative-tim.com/)
-- [Free Products](https://www.creative-tim.com/bootstrap-themes/free?ref=mk-github-readme) from Creative Tim
-- [Premium Products](https://www.creative-tim.com/bootstrap-themes/premium?ref=mk-github-readme) from Creative Tim
-- [React Products](https://www.creative-tim.com/bootstrap-themes/react-themes?ref=mk-github-readme) from Creative Tim
-- [Angular Products](https://www.creative-tim.com/bootstrap-themes/angular-themes?ref=mk-github-readme) from Creative Tim
-- [VueJS Products](https://www.creative-tim.com/bootstrap-themes/vuejs-themes?ref=mk-github-readme) from Creative Tim
-- [More products](https://www.creative-tim.com/bootstrap-themes?ref=mk-github-readme) from Creative Tim
-- [Argon Design](https://www.creative-tim.com/design-system/argon)
-- Check our Bundles [here](https://www.creative-tim.com/bundles?ref=mk-github-readme)
-- [Get Discount](https://www.creative-tim.com/coupon)
+The application will be available at `http://localhost:8000`
 
-## Social Media
+### Starting Background Services (Optional)
+For full functionality, start Redis and Celery:
 
-Twitter: <https://twitter.com/CreativeTim>
+```bash
+# Start Redis (if not running as service)
+redis-server
 
-Facebook: <https://www.facebook.com/CreativeTim>
+# Start Celery worker (in another terminal)
+celery -A educational_hub worker --loglevel=info
 
-Dribbble: <https://dribbble.com/creativetim>
+# Start Celery beat for scheduled tasks (in another terminal)
+celery -A educational_hub beat --loglevel=info
+```
 
-TikTok: <https://tiktok.com/@creative.tim>
+## 📱 Key Features Walkthrough
 
-Instagram: <https://instagram.com/creativetimofficial>
+### 1. Course Upload
+- Navigate to "Upload Course" in the sidebar
+- Fill in course details (title, description)
+- Upload audio files for AI transcription
+- Upload PDF files for content analysis
+- AI automatically processes and generates summaries
+
+### 2. Voice Questions
+- Use the voice recording interface on the dashboard
+- Click "Record Question" to start recording
+- Ask questions about course content
+- Get AI-generated responses with explanations
+- View generated illustrations (when AI services are configured)
+
+### 3. Quiz Generation
+- Courses automatically generate quizzes from content
+- Take quizzes with real-time feedback
+- View detailed analytics and performance metrics
+- Track learning progress over time
+
+### 4. Face Recognition Login
+- Upload a profile photo during registration
+- Use face recognition for quick login
+- System detects engagement during learning sessions
+
+## 🔧 Configuration
+
+### AI Services Setup
+
+#### Whisper (Speech-to-Text)
+```bash
+pip install openai-whisper
+```
+
+#### Gemini AI (Text Generation)
+1. Get API key from Google AI Studio
+2. Add to `.env` file: `GEMINI_API_KEY=your_key_here`
+
+#### Hugging Face (Image Generation)
+1. Get API token from Hugging Face
+2. Add to `.env` file: `HUGGINGFACE_API_KEY=your_token_here`
+
+#### Face Recognition
+```bash
+pip install face-recognition opencv-python
+```
+
+### Database Configuration
+For production, configure PostgreSQL:
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'educational_hub',
+        'USER': 'your_user',
+        'PASSWORD': 'your_password',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+```
+
+## 📊 API Endpoints
+
+### Course Management
+- `GET /api/user-courses/` - Get user's enrolled courses
+- `POST /api/audio-question/` - Upload voice question
+- `GET /api/audio-question/{id}/status/` - Get question processing status
+
+### Quiz System
+- `GET /quiz/` - List all quizzes
+- `GET /quiz/{id}/` - Quiz details
+- `POST /quiz/{id}/attempt/` - Start quiz attempt
+
+### AI Services
+- `POST /ai/transcribe/` - Transcribe audio
+- `POST /ai/generate-text/` - Generate text response
+- `POST /ai/generate-image/` - Generate image
+- `POST /ai/face-recognition/` - Face recognition
+- `POST /ai/engagement-detection/` - Detect engagement
+
+### WebSocket Endpoints
+- `ws/course/{course_id}/` - Course interaction WebSocket
+- `ws/quiz/{quiz_id}/` - Quiz interaction WebSocket
+
+## 🎨 Customization
+
+### Styling
+The application uses the Argon Dashboard template. Customize by:
+1. Modifying CSS files in `assets/css/`
+2. Updating templates in `templates/pages/`
+3. Adding custom JavaScript in template files
+
+### Adding New AI Services
+1. Create service class in `ai_services/services.py`
+2. Add API endpoint in `ai_services/views.py`
+3. Update frontend to use new service
+
+## 🚀 Deployment
+
+### Production Checklist
+1. Set `DEBUG=False` in settings
+2. Configure production database
+3. Set up Redis server
+4. Configure Celery workers
+5. Set up static file serving
+6. Configure HTTPS
+7. Set up monitoring and logging
+
+### Docker Deployment (Optional)
+```dockerfile
+FROM python:3.14
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the documentation
+- Review the example configurations
+
+## 🔮 Future Enhancements
+
+- [ ] Mobile app integration
+- [ ] Advanced analytics dashboard
+- [ ] Multi-language support
+- [ ] Integration with LMS platforms
+- [ ] Advanced AI tutoring features
+- [ ] Collaborative learning tools
+- [ ] Gamification elements
+
+---
+
+**Built with ❤️ using Django 4.2 and Argon Dashboard**

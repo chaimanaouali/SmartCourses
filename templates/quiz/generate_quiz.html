@@ -1,0 +1,263 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Generate Quiz - Educational Hub</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-icons.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-svg.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload_course' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Upload Course</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'quiz_app:quiz_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Quizzes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'profile' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Profile</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'quiz_app:quiz_list' %}">Quizzes</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Generate Quiz</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">AI Quiz Generator</h6>
+        </nav>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <div class="row">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">🤖 Generate AI Quiz from Course</h6>
+                <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary btn-sm">View Course</a>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Course Information -->
+              <div class="row mb-4">
+                <div class="col-md-8">
+                  <h5 class="mb-2">{{ course.title }}</h5>
+                  <p class="text-sm text-muted mb-3">{{ course.description }}</p>
+                  
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="d-flex align-items-center mb-2">
+                        <i class="ni ni-single-copy-04 text-primary me-2"></i>
+                        <span class="text-sm">Content Type: {{ course.audio_file|yesno:"Audio,PDF" }}</span>
+                      </div>
+                      {% if course.transcript %}
+                      <div class="d-flex align-items-center mb-2">
+                        <i class="ni ni-notes text-success me-2"></i>
+                        <span class="text-sm">Transcript Available</span>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                      <div class="d-flex align-items-center mb-2">
+                        <i class="ni ni-single-02 text-info me-2"></i>
+                        <span class="text-sm">Instructor: {{ course.instructor.username }}</span>
+                      </div>
+                      <div class="d-flex align-items-center mb-2">
+                        <i class="ni ni-calendar-grid-58 text-warning me-2"></i>
+                        <span class="text-sm">Created: {{ course.created_at|date:"M d, Y" }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-gradient-primary">
+                    <div class="card-body text-center">
+                      <h6 class="text-white mb-0">AI Analysis</h6>
+                      <p class="text-white opacity-8 mb-0">Content ready for quiz generation</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quiz Generation Form -->
+              <form method="post" id="quiz-generation-form">
+                {% csrf_token %}
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="difficulty" class="form-control-label">Difficulty Level</label>
+                      <select class="form-control" name="difficulty" id="difficulty" required>
+                        {% for value, label in difficulty_choices %}
+                        <option value="{{ value }}" {% if value == 'intermediate' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                      <small class="text-muted">AI will adjust question complexity based on this setting</small>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="num_questions" class="form-control-label">Number of Questions</label>
+                      <select class="form-control" name="num_questions" id="num_questions" required>
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                      </select>
+                      <small class="text-muted">More questions provide better assessment coverage</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AI Features Preview -->
+                <div class="row mt-4">
+                  <div class="col-12">
+                    <h6 class="mb-3">AI Features That Will Be Applied:</h6>
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="card border">
+                          <div class="card-body text-center">
+                            <i class="ni ni-settings-gear-65 text-primary mb-2" style="font-size: 2rem;"></i>
+                            <h6 class="mb-1">Smart Question Types</h6>
+                            <p class="text-xs text-muted mb-0">Multiple choice, True/False, Open-ended</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="card border">
+                          <div class="card-body text-center">
+                            <i class="ni ni-bulb-61 text-success mb-2" style="font-size: 2rem;"></i>
+                            <h6 class="mb-1">Content Analysis</h6>
+                            <p class="text-xs text-muted mb-0">AI extracts key concepts and facts</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="card border">
+                          <div class="card-body text-center">
+                            <i class="ni ni-chart-bar-32 text-info mb-2" style="font-size: 2rem;"></i>
+                            <h6 class="mb-1">Difficulty Scaling</h6>
+                            <p class="text-xs text-muted mb-0">Questions match selected difficulty level</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="card border">
+                          <div class="card-body text-center">
+                            <i class="ni ni-send text-warning mb-2" style="font-size: 2rem;"></i>
+                            <h6 class="mb-1">Smart Explanations</h6>
+                            <p class="text-xs text-muted mb-0">AI generates detailed answer explanations</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Generation Button -->
+                <div class="row mt-4">
+                  <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-0">Ready to Generate?</h6>
+                        <p class="text-sm text-muted mb-0">AI will analyze the course content and create intelligent questions</p>
+                      </div>
+                      <div>
+                        <button type="button" class="btn btn-outline-secondary me-2" onclick="history.back()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="generate-btn">
+                          <i class="ni ni-settings-gear-65 me-1"></i>
+                          Generate Quiz with AI
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- AI Processing Indicator -->
+          <div class="card" id="processing-card" style="display: none;">
+            <div class="card-body text-center">
+              <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <h6 class="mb-2">🤖 AI is Generating Your Quiz...</h6>
+              <p class="text-sm text-muted mb-0">Analyzing course content and creating intelligent questions</p>
+              <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  
+  <script>
+    document.getElementById('quiz-generation-form').addEventListener('submit', function(e) {
+      // Show processing indicator
+      document.getElementById('processing-card').style.display = 'block';
+      document.getElementById('generate-btn').disabled = true;
+      document.getElementById('generate-btn').innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Generating...';
+    });
+  </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,300 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Take Quiz - Educational Hub</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-icons.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-svg.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'quiz_app:quiz_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Quizzes</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'quiz_app:quiz_list' %}">Quizzes</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Take Quiz</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">{{ quiz.title }}</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <div class="d-flex align-items-center">
+              <div class="text-white me-3">
+                <i class="ni ni-watch-time me-1"></i>
+                <span id="timer">00:00</span>
+              </div>
+              <div class="text-white">
+                <i class="ni ni-single-copy-04 me-1"></i>
+                <span id="progress">0/{{ questions|length }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <div class="row">
+        <div class="col-12">
+          <!-- Quiz Header -->
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-0">{{ quiz.title }}</h6>
+                  <p class="text-sm text-muted mb-0">{{ quiz.description }}</p>
+                </div>
+                <div class="text-end">
+                  <span class="badge badge-sm bg-gradient-{% if quiz.difficulty_level == 'beginner' %}success{% elif quiz.difficulty_level == 'intermediate' %}warning{% else %}danger{% endif %}">
+                    {{ quiz.get_difficulty_level_display }}
+                  </span>
+                  {% if quiz.ai_generated %}
+                  <span class="badge badge-sm bg-gradient-primary ms-2">🤖 AI Generated</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="d-flex align-items-center">
+                    <i class="ni ni-single-copy-04 text-primary me-2"></i>
+                    <div>
+                      <h6 class="mb-0">{{ questions|length }}</h6>
+                      <p class="text-xs text-muted mb-0">Questions</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="d-flex align-items-center">
+                    <i class="ni ni-watch-time text-success me-2"></i>
+                    <div>
+                      <h6 class="mb-0">{{ quiz.time_limit }}</h6>
+                      <p class="text-xs text-muted mb-0">Minutes</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="d-flex align-items-center">
+                    <i class="ni ni-trophy text-warning me-2"></i>
+                    <div>
+                      <h6 class="mb-0">{{ quiz.passing_score }}%</h6>
+                      <p class="text-xs text-muted mb-0">Passing Score</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="d-flex align-items-center">
+                    <i class="ni ni-single-02 text-info me-2"></i>
+                    <div>
+                      <h6 class="mb-0">{{ quiz.course.title }}</h6>
+                      <p class="text-xs text-muted mb-0">Course</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quiz Form -->
+          <form method="post" id="quiz-form">
+            {% csrf_token %}
+            <div class="card">
+              <div class="card-body">
+                {% for question in questions %}
+                <div class="question-container mb-4" data-question="{{ forloop.counter }}">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h6 class="mb-0">Question {{ forloop.counter }}</h6>
+                    <span class="badge badge-sm bg-gradient-primary">{{ question.question_type|title }}</span>
+                  </div>
+                  
+                  <p class="text-dark mb-3">{{ question.question_text }}</p>
+                  
+                  {% if question.question_type == 'multiple_choice' %}
+                    <div class="form-group">
+                      {% for option in question.options %}
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ forloop.counter }}_{{ question.id }}" value="{{ option }}">
+                        <label class="form-check-label" for="q{{ forloop.counter }}_{{ question.id }}">
+                          {{ option }}
+                        </label>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  
+                  {% elif question.question_type == 'true_false' %}
+                    <div class="form-group">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="true_{{ question.id }}" value="True">
+                        <label class="form-check-label" for="true_{{ question.id }}">
+                          True
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="false_{{ question.id }}" value="False">
+                        <label class="form-check-label" for="false_{{ question.id }}">
+                          False
+                        </label>
+                      </div>
+                    </div>
+                  
+                  {% elif question.question_type == 'open_ended' %}
+                    <div class="form-group">
+                      <textarea class="form-control" name="question_{{ question.id }}" rows="4" placeholder="Type your answer here..."></textarea>
+                    </div>
+                  
+                  {% elif question.question_type == 'fill_blank' %}
+                    <div class="form-group">
+                      <input type="text" class="form-control" name="question_{{ question.id }}" placeholder="Fill in the blank...">
+                    </div>
+                  {% endif %}
+                  
+                  <hr class="horizontal dark">
+                </div>
+                {% endfor %}
+              </div>
+              
+              <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="text-sm text-muted">
+                    <i class="ni ni-watch-time me-1"></i>
+                    Time remaining: <span id="time-remaining">{{ quiz.time_limit }}:00</span>
+                  </div>
+                  <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="history.back()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                      <i class="ni ni-send me-1"></i>
+                      Submit Quiz
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  
+  <script>
+    // Quiz Timer
+    let timeLimit = {{ quiz.time_limit }} * 60; // Convert to seconds
+    let timeRemaining = timeLimit;
+    let timerInterval;
+    
+    function startTimer() {
+      timerInterval = setInterval(function() {
+        timeRemaining--;
+        
+        let minutes = Math.floor(timeRemaining / 60);
+        let seconds = timeRemaining % 60;
+        
+        document.getElementById('timer').textContent = 
+          (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+        document.getElementById('time-remaining').textContent = 
+          (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+        
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('quiz-form').submit();
+        }
+      }, 1000);
+    }
+    
+    // Progress tracking
+    function updateProgress() {
+      const answered = document.querySelectorAll('input[type="radio"]:checked, textarea:not(:placeholder-shown), input[type="text"]:not(:placeholder-shown)').length;
+      const total = {{ questions|length }};
+      document.getElementById('progress').textContent = `${answered}/${total}`;
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      startTimer();
+      updateProgress();
+      
+      // Update progress on input change
+      document.querySelectorAll('input, textarea').forEach(function(element) {
+        element.addEventListener('change', updateProgress);
+        element.addEventListener('input', updateProgress);
+      });
+    });
+    
+    // Form submission
+    document.getElementById('quiz-form').addEventListener('submit', function(e) {
+      const answered = document.querySelectorAll('input[type="radio"]:checked, textarea:not(:placeholder-shown), input[type="text"]:not(:placeholder-shown)').length;
+      const total = {{ questions|length }};
+      
+      if (answered < total) {
+        if (!confirm(`You have only answered ${answered} out of ${total} questions. Are you sure you want to submit?`)) {
+          e.preventDefault();
+          return;
+        }
+      }
+      
+      clearInterval(timerInterval);
+      document.getElementById('submit-btn').disabled = true;
+      document.getElementById('submit-btn').innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Submitting...';
+    });
+    
+    // Auto-save functionality (optional)
+    function autoSave() {
+      const formData = new FormData(document.getElementById('quiz-form'));
+      // Could implement auto-save to localStorage or send to server
+    }
+    
+    // Auto-save every 30 seconds
+    setInterval(autoSave, 30000);
+  </script>
+</body>
+</html>
+
+
+
+
