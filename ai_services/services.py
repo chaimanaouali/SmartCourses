@@ -5,6 +5,10 @@ from django.conf import settings
 from course_app.models import Course, AudioQuestion
 from .models import GeneratedContent, AnalyticsService
 from .face_recognition_service import face_recognition_service
+try:
+    from .face_recognition_dlib import dlib_face_service
+except Exception:
+    dlib_face_service = None
 
 
 class AIServiceManager:
@@ -64,8 +68,17 @@ class AIServiceManager:
             # Prepare stored encodings
             stored_encodings = [(p.user.id, p.face_encoding) for p in profiles if p.face_encoding]
             
-            # Recognize face
-            user_id, confidence = face_recognition_service.recognize_face(image_data, stored_encodings)
+            # Prefer dlib-based recognition if available
+            user_id, confidence = (None, 0)
+            if dlib_face_service is not None:
+                try:
+                    user_id, confidence = dlib_face_service.recognize_face(image_data, stored_encodings)
+                except Exception:
+                    user_id, confidence = (None, 0)
+            
+            # Fallback to OpenCV service
+            if user_id is None:
+                user_id, confidence = face_recognition_service.recognize_face(image_data, stored_encodings)
             
             if user_id:
                 from django.contrib.auth.models import User
@@ -81,7 +94,17 @@ class AIServiceManager:
     def register_face(self, user, image_data):
         """Register user's face for recognition"""
         try:
-            success, result = face_recognition_service.register_face(user, image_data)
+            # Prefer dlib-based registration if available
+            success, result = (False, None)
+            if dlib_face_service is not None:
+                try:
+                    success, result = dlib_face_service.register_face(user, image_data)
+                except Exception:
+                    success, result = (False, None)
+            
+            # Fallback to OpenCV service
+            if not success:
+                success, result = face_recognition_service.register_face(user, image_data)
             return success, result
         except Exception as e:
             print(f"Error registering face: {e}")
