@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 import json
@@ -56,8 +56,13 @@ def signin(request):
             login(request, user)
             return redirect('home')
         else:
-            messages.error(request, 'Invalid credentials')
+            messages.error(request, 'Invalid username or password')
     return render(request, 'pages/sign-in.html')
+
+
+def face_login_page(request):
+    """Face recognition login page"""
+    return render(request, 'pages/face-login.html')
 
 
 def logout_view(request):
@@ -321,40 +326,76 @@ def end_engagement_session(request, session_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
+@csrf_exempt
 def face_recognition_login(request):
-    """Face recognition login endpoint"""
+    """Face recognition login endpoint - AI-powered login using face"""
     try:
-        image_file = request.FILES.get('image')
-        if not image_file:
-            return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
+        # Get image from request (either file upload or base64)
+        image_data = request.FILES.get('image')
+        if not image_data:
+            # Try to get base64 image from JSON
+            image_base64 = request.data.get('image')
+            if image_base64:
+                image_data = image_base64
+            else:
+                return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Get face encoding from uploaded image
-        face_encoding = ai_manager.recognize_face(image_file.temporary_file_path())
+        # Use AI service to recognize face
+        user, confidence = ai_manager.recognize_face(image_data)
         
-        if not face_encoding:
-            return Response({'error': 'No face detected'}, status=status.HTTP_400_BAD_REQUEST)
+        if user:
+            # Log the user in
+            login(request, user)
+            return Response({
+                'success': True,
+                'user': user.username,
+                'email': user.email,
+                'confidence': float(confidence),
+                'message': 'Face recognition login successful'
+            })
+        else:
+            return Response({
+                'error': 'Face not recognized',
+                'message': confidence  # This will contain the error message
+            }, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Find matching user profile
-        profiles = UserProfile.objects.exclude(face_encoding__isnull=True)
-        for profile in profiles:
-            if profile.face_encoding:
-                # Compare face encodings (simplified comparison)
-                stored_encoding = np.array(profile.face_encoding)
-                current_encoding = np.array(face_encoding)
-                
-                # Calculate distance between encodings
-                distance = np.linalg.norm(stored_encoding - current_encoding)
-                
-                if distance < 0.6:  # Threshold for face match
-                    login(request, profile.user)
-                    return Response({
-                        'success': True,
-                        'user': profile.user.username,
-                        'message': 'Face recognition successful'
-                    })
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def register_face(request):
+    """Register user's face for AI-powered login"""
+    try:
+        # Get image from request
+        image_data = request.FILES.get('image')
+        if not image_data:
+            image_base64 = request.data.get('image')
+            if image_base64:
+                image_data = image_base64
+            else:
+                return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response({'error': 'Face not recognized'}, status=status.HTTP_401_UNAUTHORIZED)
+        # Register face using AI service
+        success, result = ai_manager.register_face(request.user, image_data)
+        
+        if success:
+            # Save face encoding to user profile
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            profile.face_encoding = result  # result contains the face encoding list
+            profile.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Face registered successfully for AI login'
+            })
+        else:
+            return Response({
+                'error': 'Face registration failed',
+                'message': result  # result contains error message
+            }, status=status.HTTP_400_BAD_REQUEST)
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

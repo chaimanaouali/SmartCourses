@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('signup/', views.signup, name='signup'),
     path('signin/', views.signin, name='signin'),
+    path('face-login/', views.face_login_page, name='face_login_page'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile, name='profile'),
     path('course/<uuid:course_id>/', views.course_detail, name='course_detail'),
@@ -20,6 +21,7 @@ urlpatterns = [
     path('api/engagement/<uuid:session_id>/update/', views.update_engagement, name='update_engagement'),
     path('api/engagement/<uuid:session_id>/end/', views.end_engagement_session, name='end_engagement'),
     path('api/face-login/', views.face_recognition_login, name='face_login'),
+    path('api/face-register/', views.register_face, name='face_register'),
     path('api/user-courses/', views.get_user_courses, name='user_courses'),
     path('api/course/<uuid:course_id>/quizzes/', views.get_course_quizzes, name='course_quizzes'),
 ]

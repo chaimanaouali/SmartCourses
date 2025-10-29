@@ -62,12 +62,10 @@
               <div class="text-center">
                 <h6 class="text-sm font-weight-bold">Or sign in with face recognition</h6>
                 <div class="mt-3">
-                  <button id="faceLoginBtn" class="btn btn-outline-primary">
-                    <i class="ni ni-camera-compact me-2"></i>Face Recognition Login
-                  </button>
+                  <a href="{% url 'face_login_page' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-camera me-2"></i>Face Recognition Login
+                  </a>
                 </div>
-                <input type="file" id="faceImageInput" accept="image/*" style="display: none;">
-                <div id="faceLoginResult" class="mt-3" style="display: none;"></div>
               </div>
             </div>
           </div>
@@ -79,80 +77,6 @@
   <script src="{% static 'js/core/popper.min.js' %}"></script>
   <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
   <script src="{% static 'js/argon-dashboard.min.js' %}?v=2.1.0"></script>
-  
-  <script>
-    document.getElementById('faceLoginBtn').addEventListener('click', function() {
-      document.getElementById('faceImageInput').click();
-    });
-    
-    document.getElementById('faceImageInput').addEventListener('change', async function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const formData = new FormData();
-      formData.append('image', file);
-      
-      try {
-        const response = await fetch('/api/face-login/', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-          }
-        });
-        
-        const data = await response.json();
-        const resultDiv = document.getElementById('faceLoginResult');
-        
-        if (response.ok && data.success) {
-          resultDiv.innerHTML = `
-            <div class="alert alert-success">
-              <h6>Face Recognition Successful!</h6>
-              <p>Welcome back, ${data.user}!</p>
-            </div>
-          `;
-          resultDiv.style.display = 'block';
-          
-          // Redirect to dashboard after successful login
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 2000);
-        } else {
-          resultDiv.innerHTML = `
-            <div class="alert alert-danger">
-              <h6>Face Recognition Failed</h6>
-              <p>${data.error || 'Face not recognized. Please try again or use regular login.'}</p>
-            </div>
-          `;
-          resultDiv.style.display = 'block';
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('faceLoginResult').innerHTML = `
-          <div class="alert alert-danger">
-            <h6>Error</h6>
-            <p>An error occurred during face recognition. Please try again.</p>
-          </div>
-        `;
-        document.getElementById('faceLoginResult').style.display = 'block';
-      }
-    });
-    
-    function getCookie(name) {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
-    }
-  </script>
 </body>
 
 </html>

@@ -4,6 +4,7 @@ import requests
 from django.conf import settings
 from course_app.models import Course, AudioQuestion
 from .models import GeneratedContent, AnalyticsService
+from .face_recognition_service import face_recognition_service
 
 
 class AIServiceManager:
@@ -50,27 +51,65 @@ class AIServiceManager:
             print(f"Error generating image: {e}")
             return None
     
-    def recognize_face(self, image_path):
-        """Recognize face in image"""
+    def recognize_face(self, image_data):
+        """Recognize face in image using the face recognition service"""
         try:
-            # Placeholder for face recognition
-            return None
+            # Get all user profiles with face encodings
+            from course_app.models import UserProfile
+            profiles = UserProfile.objects.exclude(face_encoding__isnull=True)
+            
+            if not profiles:
+                return None, "No registered faces found"
+            
+            # Prepare stored encodings
+            stored_encodings = [(p.user.id, p.face_encoding) for p in profiles if p.face_encoding]
+            
+            # Recognize face
+            user_id, confidence = face_recognition_service.recognize_face(image_data, stored_encodings)
+            
+            if user_id:
+                from django.contrib.auth.models import User
+                user = User.objects.get(id=user_id)
+                return user, confidence
+            
+            return None, "Face not recognized"
+            
         except Exception as e:
             print(f"Error recognizing face: {e}")
-            return None
+            return None, str(e)
     
-    def detect_engagement(self, image_path):
+    def register_face(self, user, image_data):
+        """Register user's face for recognition"""
+        try:
+            success, result = face_recognition_service.register_face(user, image_data)
+            return success, result
+        except Exception as e:
+            print(f"Error registering face: {e}")
+            return False, str(e)
+    
+    def detect_engagement(self, image_data):
         """Detect user engagement from facial expressions"""
         try:
-            # Placeholder for engagement detection
+            engagement_status = face_recognition_service.detect_engagement(image_data)
+            
+            # Convert to score-based format
+            if "Focused" in engagement_status:
+                score = 0.9
+            elif "Multiple" in engagement_status:
+                score = 0.4
+            elif "No" in engagement_status:
+                score = 0.0
+            else:
+                score = 0.5
+            
             return {
-                'engagement_score': 0.5,
-                'face_detected': True,
-                'face_count': 1
+                'engagement_score': score,
+                'face_detected': "No" not in engagement_status,
+                'status': engagement_status
             }
         except Exception as e:
             print(f"Error detecting engagement: {e}")
-            return {'engagement_score': 0.0, 'face_detected': False, 'face_count': 0}
+            return {'engagement_score': 0.0, 'face_detected': False, 'status': 'Error'}
 
 
 # Global AI service manager instance

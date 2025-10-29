@@ -208,6 +208,61 @@
             </div>
           </div>
 
+          <!-- Face Recognition Card -->
+          <div class="card mb-4">
+            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">AI Face Recognition Login</h6>
+              {% if user_profile.face_encoding %}
+              <span class="badge bg-success">Registered</span>
+              {% else %}
+              <span class="badge bg-warning">Not Registered</span>
+              {% endif %}
+            </div>
+            <div class="card-body">
+              <p class="text-sm mb-3">Enable passwordless login using facial recognition. Register your face to use this feature.</p>
+              
+              {% if user_profile.face_encoding %}
+              <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                Your face is registered! You can now use face recognition to login.
+                <a href="{% url 'face_login_page' %}" class="alert-link">Try Face Login</a>
+              </div>
+              {% endif %}
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div id="faceRegContainer" style="display: none;">
+                    <video id="faceRegVideo" width="100%" style="max-width: 400px; border-radius: 10px;" autoplay playsinline></video>
+                    <canvas id="faceRegCanvas" style="display: none;"></canvas>
+                  </div>
+                  <div id="faceRegResult" class="mt-3"></div>
+                </div>
+                <div class="col-md-6">
+                  <h6>How it works:</h6>
+                  <ol class="text-sm">
+                    <li>Click "Register Face" to start camera</li>
+                    <li>Position your face in the camera view</li>
+                    <li>Click "Capture" to register your face</li>
+                    <li>Use face recognition for quick login</li>
+                  </ol>
+                  
+                  <div class="mt-3">
+                    <button id="startFaceRegBtn" class="btn btn-primary" onclick="startFaceRegistration()">
+                      <i class="fas fa-camera me-2"></i>
+                      {% if user_profile.face_encoding %}Re-register{% else %}Register{% endif %} Face
+                    </button>
+                    <button id="captureFaceBtn" class="btn btn-success ms-2" onclick="captureFace()" style="display: none;">
+                      <i class="fas fa-check me-2"></i>Capture
+                    </button>
+                    <button id="stopFaceRegBtn" class="btn btn-secondary ms-2" onclick="stopFaceRegistration()" style="display: none;">
+                      <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="card mb-4">
             <div class="card-header pb-0">
               <h6 class="mb-0">Learning Statistics</h6>
@@ -335,6 +390,124 @@
     
     function showSettings() {
       alert('Settings functionality coming soon!');
+    }
+    
+    // Face Registration Functions
+    let faceRegStream = null;
+    const faceRegVideo = document.getElementById('faceRegVideo');
+    const faceRegCanvas = document.getElementById('faceRegCanvas');
+    const faceRegContainer = document.getElementById('faceRegContainer');
+    const faceRegResult = document.getElementById('faceRegResult');
+    const startFaceRegBtn = document.getElementById('startFaceRegBtn');
+    const captureFaceBtn = document.getElementById('captureFaceBtn');
+    const stopFaceRegBtn = document.getElementById('stopFaceRegBtn');
+    
+    async function startFaceRegistration() {
+      try {
+        faceRegStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user'
+          } 
+        });
+        faceRegVideo.srcObject = faceRegStream;
+        faceRegContainer.style.display = 'block';
+        startFaceRegBtn.style.display = 'none';
+        captureFaceBtn.style.display = 'inline-block';
+        stopFaceRegBtn.style.display = 'inline-block';
+        faceRegResult.innerHTML = '<div class="alert alert-info">Camera ready! Position your face and click Capture.</div>';
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        faceRegResult.innerHTML = '<div class="alert alert-danger">Unable to access camera. Please check permissions.</div>';
+      }
+    }
+    
+    function stopFaceRegistration() {
+      if (faceRegStream) {
+        faceRegStream.getTracks().forEach(track => track.stop());
+      }
+      faceRegContainer.style.display = 'none';
+      startFaceRegBtn.style.display = 'inline-block';
+      captureFaceBtn.style.display = 'none';
+      stopFaceRegBtn.style.display = 'none';
+      faceRegResult.innerHTML = '';
+    }
+    
+    async function captureFace() {
+      captureFaceBtn.disabled = true;
+      faceRegResult.innerHTML = '<div class="alert alert-info">Processing face registration...</div>';
+      
+      // Set canvas size to match video
+      faceRegCanvas.width = faceRegVideo.videoWidth;
+      faceRegCanvas.height = faceRegVideo.videoHeight;
+      
+      // Draw current video frame to canvas
+      const ctx = faceRegCanvas.getContext('2d');
+      ctx.drawImage(faceRegVideo, 0, 0, faceRegCanvas.width, faceRegCanvas.height);
+      
+      // Convert canvas to blob
+      faceRegCanvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append('image', blob, 'face.jpg');
+        
+        try {
+          const response = await fetch('/api/face-register/', {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            faceRegResult.innerHTML = `
+              <div class="alert alert-success">
+                <h6>Face Registered Successfully!</h6>
+                <p>${data.message}</p>
+                <p class="mb-0">You can now use face recognition to login. <a href="{% url 'face_login_page' %}" class="alert-link">Try it now</a></p>
+              </div>
+            `;
+            stopFaceRegistration();
+            // Reload page to update badge
+            setTimeout(() => location.reload(), 2000);
+          } else {
+            faceRegResult.innerHTML = `
+              <div class="alert alert-danger">
+                <h6>Face Registration Failed</h6>
+                <p>${data.message || 'No face detected. Please try again.'}</p>
+              </div>
+            `;
+            captureFaceBtn.disabled = false;
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          faceRegResult.innerHTML = `
+            <div class="alert alert-danger">
+              <h6>Error</h6>
+              <p>An error occurred during registration. Please try again.</p>
+            </div>
+          `;
+          captureFaceBtn.disabled = false;
+        }
+      }, 'image/jpeg', 0.95);
+    }
+    
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
     }
   </script>
 </body>
