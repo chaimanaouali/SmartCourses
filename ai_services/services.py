@@ -93,8 +93,8 @@ class AIServiceManager:
             model_candidates = []
             if os.getenv('GROQ_LLM_MODEL'):
                 model_candidates.append(os.getenv('GROQ_LLM_MODEL'))
-            # Updated available Groq models
-            model_candidates.extend(['mixtral-8x7b-32768', 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'])
+            # Updated available Groq models (prefer Mistral 7B Instruct if available)
+            model_candidates.extend(['mistral-7b-instruct', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'])
             full_prompt = prompt if not context else f"Context:\n{context}\n\nUser:\n{prompt}"
             last_error = None
             for model_name in model_candidates:

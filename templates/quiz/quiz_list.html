@@ -168,7 +168,7 @@
               <h6 class="mb-0">🤖 Generate New AI Quiz</h6>
             </div>
             <div class="card-body">
-              <form method="post" action="{% url 'quiz_app:generate_quiz_api' %}">
+              <form id="generateQuizForm" method="post" action="{% url 'quiz_app:generate_quiz_api' %}">
                 {% csrf_token %}
                 <div class="row">
                   <div class="col-md-4">
@@ -323,7 +323,7 @@
   <script>
     // Handle quiz generation form
     document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form[action*="generate_quiz_api"]');
+      const form = document.getElementById('generateQuizForm');
       if (form) {
         form.addEventListener('submit', function(e) {
           e.preventDefault();
@@ -346,12 +346,13 @@
           .then(response => response.json())
           .then(data => {
             if (data.success === true) {
-              // Show success message
-              showNotification('Quiz generated successfully! Redirecting...', 'success');
-              // Redirect to the generated quiz
+              // Show success message and stay on dashboard
+              showNotification('Quiz generated successfully!', 'success');
+              // Refresh the page to show the new quiz in the list
               setTimeout(() => {
-                window.location.href = `/quiz/quiz/${data.quiz_id}/`;
-              }, 1500);
+                window.location.href = '/quiz/#';
+                window.location.reload();
+              }, 1200);
             } else {
               showNotification('Error generating quiz: ' + (data.message || 'Unknown error'), 'error');
             }

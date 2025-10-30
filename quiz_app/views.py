@@ -50,6 +50,25 @@ def generate_quiz(request, course_id):
             course_content += f"\n{course.transcript}"
         if course.summary:
             course_content += f"\n{course.summary}"
+        # Try to extract some text from PDF file if available
+        if course.pdf_file:
+            try:
+                import PyPDF2
+                pdf_path = course.pdf_file.path
+                with open(pdf_path, 'rb') as f:
+                    reader = PyPDF2.PdfReader(f)
+                    page_count = min(len(reader.pages), 5)
+                    pdf_text = []
+                    for i in range(page_count):
+                        try:
+                            pdf_text.append(reader.pages[i].extract_text() or '')
+                        except Exception:
+                            continue
+                    if pdf_text:
+                        course_content += "\nPDF Extract:\n" + "\n".join(pdf_text)
+            except Exception:
+                # Best-effort; ignore if PyPDF2 not installed or read fails
+                pass
         
         # Generate quiz using AI
         ai_result = quiz_generation_ai.generate_quiz_from_content(
@@ -357,23 +376,30 @@ def generate_quiz_api(request):
         # Generate quiz using AI with comprehensive course content
         course_content = f"Course Title: {course.title}\n"
         course_content += f"Description: {course.description}\n"
-        
         if course.transcript:
             course_content += f"Transcript: {course.transcript}\n"
-        
         if course.summary:
             course_content += f"Summary: {course.summary}\n"
-        
         if course.key_concepts:
             course_content += f"Key Concepts: {', '.join(course.key_concepts)}\n"
-        
-        # Add PDF content if available (this would require PDF parsing in production)
+        # Add PDF parsed text if available
         if course.pdf_file:
-            course_content += f"PDF Content: [PDF file available - {course.pdf_file.name}]\n"
-        
-        # Add audio content if available
-        if course.audio_file:
-            course_content += f"Audio Content: [Audio file available - {course.audio_file.name}]\n"
+            try:
+                import PyPDF2
+                pdf_path = course.pdf_file.path
+                with open(pdf_path, 'rb') as f:
+                    reader = PyPDF2.PdfReader(f)
+                    page_count = min(len(reader.pages), 5)
+                    pdf_text = []
+                    for i in range(page_count):
+                        try:
+                            pdf_text.append(reader.pages[i].extract_text() or '')
+                        except Exception:
+                            continue
+                    if pdf_text:
+                        course_content += "PDF Extract: " + " ".join(pdf_text) + "\n"
+            except Exception:
+                pass
         
         ai_result = quiz_generation_ai.generate_quiz_from_content(
             course_content=course_content,
