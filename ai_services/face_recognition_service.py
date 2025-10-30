@@ -164,33 +164,75 @@ class FaceRecognitionService:
             numpy.ndarray: OpenCV image or None
         """
         try:
-            # If it's a file path
-            if isinstance(image_data, str):
-                if os.path.exists(image_data):
-                    return cv2.imread(image_data)
-            
             # If it's a numpy array
-            elif isinstance(image_data, np.ndarray):
+            if isinstance(image_data, np.ndarray):
                 return image_data
             
-            # If it's a file object
+            # If it's a file path string
+            if isinstance(image_data, str):
+                # Check if it's base64 encoded
+                if image_data.startswith('data:image'):
+                    # Extract base64 data
+                    base64_data = image_data.split(',')[1]
+                    image_bytes = base64.b64decode(base64_data)
+                    if len(image_bytes) == 0:
+                        print("Error: Empty base64 image data")
+                        return None
+                    nparr = np.frombuffer(image_bytes, np.uint8)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    if img is None:
+                        print("Error: Failed to decode base64 image")
+                    return img
+                # Regular file path
+                elif os.path.exists(image_data):
+                    img = cv2.imread(image_data)
+                    if img is None:
+                        print(f"Error: Failed to read image from {image_data}")
+                    return img
+            
+            # If it's a file object (Django UploadedFile, etc.)
             elif hasattr(image_data, 'read'):
+                # Reset file pointer to beginning if possible
+                if hasattr(image_data, 'seek'):
+                    image_data.seek(0)
+                
                 image_bytes = image_data.read()
+                
+                # Validate we have data
+                if not image_bytes or len(image_bytes) == 0:
+                    print("Error: Empty image file")
+                    return None
+                
+                # Try decoding with OpenCV
                 nparr = np.frombuffer(image_bytes, np.uint8)
-                return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if len(nparr) == 0:
+                    print("Error: Failed to create numpy array from image bytes")
+                    return None
+                
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if img is None:
+                    # Fallback: Try with PIL then convert to OpenCV
+                    try:
+                        if hasattr(image_data, 'seek'):
+                            image_data.seek(0)
+                        pil_img = Image.open(BytesIO(image_bytes)).convert('RGB')
+                        img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+                        print("✓ Loaded image using PIL fallback")
+                        return img
+                    except Exception as e:
+                        print(f"Error: PIL fallback failed: {e}")
+                        return None
+                
+                return img
             
-            # If it's base64 encoded
-            elif isinstance(image_data, str) and image_data.startswith('data:image'):
-                # Extract base64 data
-                base64_data = image_data.split(',')[1]
-                image_bytes = base64.b64decode(base64_data)
-                nparr = np.frombuffer(image_bytes, np.uint8)
-                return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
+            print(f"Error: Unsupported image data type: {type(image_data)}")
             return None
             
         except Exception as e:
             print(f"Error loading image: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _extract_face_encoding(self, image_data):

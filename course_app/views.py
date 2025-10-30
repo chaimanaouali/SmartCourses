@@ -341,12 +341,22 @@ def face_recognition_login(request):
             else:
                 return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Validate image data
+        if hasattr(image_data, 'size') and image_data.size == 0:
+            return Response({
+                'error': 'Empty image file',
+                'message': 'The uploaded image file is empty'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        print(f"📸 Received image for face login: type={type(image_data)}, size={getattr(image_data, 'size', 'N/A')}")
+        
         # Use AI service to recognize face
         user, confidence = ai_manager.recognize_face(image_data)
         
         if user:
             # Log the user in
             login(request, user)
+            print(f"✅ Face recognition successful: {user.username} (confidence: {confidence:.2f})")
             return Response({
                 'success': True,
                 'user': user.username,
@@ -355,12 +365,17 @@ def face_recognition_login(request):
                 'message': 'Face recognition login successful'
             })
         else:
+            error_msg = confidence if isinstance(confidence, str) else 'Face not recognized'
+            print(f"❌ Face recognition failed: {error_msg}")
             return Response({
                 'error': 'Face not recognized',
-                'message': confidence  # This will contain the error message
+                'message': error_msg
             }, status=status.HTTP_401_UNAUTHORIZED)
         
     except Exception as e:
+        print(f"❌ Face recognition error: {e}")
+        import traceback
+        traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

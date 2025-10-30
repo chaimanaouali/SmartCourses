@@ -10,6 +10,13 @@ try:
 except Exception:
     dlib_face_service = None
 
+# Import deep learning face recognition service
+try:
+    from .face_recognition_deep import deep_face_service
+except Exception as e:
+    print(f"Warning: Deep learning face service not available: {e}")
+    deep_face_service = None
+
 
 class AIServiceManager:
     """Central manager for all AI services"""
@@ -62,49 +69,109 @@ class AIServiceManager:
             from course_app.models import UserProfile
             profiles = UserProfile.objects.exclude(face_encoding__isnull=True)
             
+            print(f"\n🔍 Starting face recognition...")
+            print(f"📊 Found {profiles.count()} registered face(s) in database")
+            
             if not profiles:
                 return None, "No registered faces found"
             
             # Prepare stored encodings
-            stored_encodings = [(p.user.id, p.face_encoding) for p in profiles if p.face_encoding]
+            stored_encodings = []
+            for p in profiles:
+                if p.face_encoding:
+                    encoding_type = "unknown"
+                    if isinstance(p.face_encoding, dict):
+                        encoding_type = p.face_encoding.get('model', 'dict')
+                    elif isinstance(p.face_encoding, list):
+                        encoding_type = f"list[{len(p.face_encoding)}]"
+                    print(f"  👤 User: {p.user.username} (ID: {p.user.id}, encoding: {encoding_type})")
+                    stored_encodings.append((p.user.id, p.face_encoding))
             
-            # Prefer dlib-based recognition if available
+            if not stored_encodings:
+                return None, "No valid face encodings found"
+            
+            # Try deep learning service first (highest accuracy)
             user_id, confidence = (None, 0)
-            if dlib_face_service is not None:
+            if deep_face_service is not None:
+                print(f"\n🤖 Trying Deep Learning (VGG16) recognition...")
+                try:
+                    user_id, confidence = deep_face_service.recognize_face(image_data, stored_encodings)
+                    if user_id is not None:
+                        print(f"✅ Deep learning recognition SUCCESS: User {user_id}, confidence {confidence:.2f}")
+                except Exception as e:
+                    print(f"❌ Deep learning recognition failed: {e}")
+                    user_id, confidence = (None, 0)
+            else:
+                print(f"⚠️  Deep learning service not available")
+            
+            # Fallback to dlib-based recognition
+            if user_id is None and dlib_face_service is not None:
+                print(f"\n🔄 Trying Dlib recognition (fallback)...")
                 try:
                     user_id, confidence = dlib_face_service.recognize_face(image_data, stored_encodings)
-                except Exception:
+                    if user_id is not None:
+                        print(f"✅ Dlib recognition SUCCESS: User {user_id}, confidence {confidence:.2f}")
+                except Exception as e:
+                    print(f"❌ Dlib recognition failed: {e}")
                     user_id, confidence = (None, 0)
+            else:
+                if user_id is None:
+                    print(f"⚠️  Dlib service not available")
             
-            # Fallback to OpenCV service
+            # Final fallback to OpenCV service
             if user_id is None:
+                print(f"\n🔄 Trying OpenCV recognition (final fallback)...")
                 user_id, confidence = face_recognition_service.recognize_face(image_data, stored_encodings)
+                if user_id is not None:
+                    print(f"✅ OpenCV recognition SUCCESS: User {user_id}, confidence {confidence:.2f}")
+                else:
+                    print(f"❌ OpenCV recognition failed")
             
             if user_id:
                 from django.contrib.auth.models import User
                 user = User.objects.get(id=user_id)
+                print(f"🎉 Final result: Recognized as {user.username}\n")
                 return user, confidence
             
+            print(f"❌ Final result: Face not recognized by any service\n")
             return None, "Face not recognized"
             
         except Exception as e:
-            print(f"Error recognizing face: {e}")
+            print(f"❌ Error recognizing face: {e}")
+            import traceback
+            traceback.print_exc()
             return None, str(e)
     
     def register_face(self, user, image_data):
         """Register user's face for recognition"""
         try:
-            # Prefer dlib-based registration if available
+            # Try deep learning service first (highest accuracy)
             success, result = (False, None)
-            if dlib_face_service is not None:
+            if deep_face_service is not None:
                 try:
-                    success, result = dlib_face_service.register_face(user, image_data)
-                except Exception:
+                    success, result = deep_face_service.register_face(user, image_data)
+                    if success:
+                        print(f"✓ Deep learning registration successful for user {user.username}")
+                except Exception as e:
+                    print(f"Deep learning registration failed: {e}")
                     success, result = (False, None)
             
-            # Fallback to OpenCV service
+            # Fallback to dlib-based registration
+            if not success and dlib_face_service is not None:
+                try:
+                    success, result = dlib_face_service.register_face(user, image_data)
+                    if success:
+                        print(f"✓ Dlib registration successful for user {user.username}")
+                except Exception as e:
+                    print(f"Dlib registration failed: {e}")
+                    success, result = (False, None)
+            
+            # Final fallback to OpenCV service
             if not success:
                 success, result = face_recognition_service.register_face(user, image_data)
+                if success:
+                    print(f"✓ OpenCV registration successful for user {user.username}")
+            
             return success, result
         except Exception as e:
             print(f"Error registering face: {e}")

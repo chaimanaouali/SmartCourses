@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
@@ -6,6 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 import json
+import base64
+import cv2
+import numpy as np
 from .services import ai_manager
 
 
@@ -191,6 +194,212 @@ def detect_engagement(request):
             if os.path.exists(tmp_file_path):
                 os.unlink(tmp_file_path)
                 
+    except Exception as e:
+        return Response({
+            'error': str(e),
+            'success': False
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# CAMERA-BASED FACE RECOGNITION ENDPOINTS (Deep Learning)
+# ============================================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def camera_capture_frame(request):
+    """Capture a single frame from the camera"""
+    try:
+        from .camera_utils import capture_single_frame
+        
+        camera_index = int(request.data.get('camera_index', 0))
+        
+        # Capture frame
+        frame = capture_single_frame(camera_index)
+        
+        if frame is None:
+            return Response({
+                'error': 'Failed to capture frame from camera',
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Convert frame to base64
+        _, buffer = cv2.imencode('.jpg', frame)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return Response({
+            'image': f"data:image/jpeg;base64,{img_base64}",
+            'success': True
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': str(e),
+            'success': False
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def camera_recognize_face(request):
+    """
+    Capture from camera and recognize face using deep learning model
+    """
+    try:
+        from .camera_utils import capture_single_frame
+        from .face_recognition_deep import deep_face_service
+        
+        if deep_face_service is None:
+            return Response({
+                'error': 'Deep learning face recognition service not available',
+                'success': False
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        camera_index = int(request.data.get('camera_index', 0))
+        
+        # Capture frame
+        frame = capture_single_frame(camera_index)
+        
+        if frame is None:
+            return Response({
+                'error': 'Failed to capture frame from camera',
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Perform face recognition
+        result = deep_face_service.recognize_face_realtime(frame)
+        
+        if not result['success']:
+            return Response({
+                'error': result.get('error', 'Recognition failed'),
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Convert annotated frame to base64
+        annotated_frame = result['frame']
+        _, buffer = cv2.imencode('.jpg', annotated_frame)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return Response({
+            'image': f"data:image/jpeg;base64,{img_base64}",
+            'faces': result['faces'],
+            'face_count': result['face_count'],
+            'success': True
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': str(e),
+            'success': False
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def camera_register_face(request):
+    """
+    Register user's face from camera using deep learning model
+    """
+    try:
+        from .camera_utils import capture_single_frame
+        from course_app.models import UserProfile
+        
+        camera_index = int(request.data.get('camera_index', 0))
+        
+        # Capture frame
+        frame = capture_single_frame(camera_index)
+        
+        if frame is None:
+            return Response({
+                'error': 'Failed to capture frame from camera',
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Register face
+        user = request.user
+        success, result = ai_manager.register_face(user, frame)
+        
+        if not success:
+            return Response({
+                'error': result,
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Save face encoding to user profile
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile.face_encoding = result
+        profile.save()
+        
+        return Response({
+            'message': f'Face registered successfully for {user.username}',
+            'model': result.get('model', 'unknown'),
+            'success': True
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': str(e),
+            'success': False
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def camera_stream_base64(request):
+    """
+    Accept base64 encoded camera frame and perform face recognition
+    """
+    try:
+        from .face_recognition_deep import deep_face_service
+        
+        if deep_face_service is None:
+            return Response({
+                'error': 'Deep learning face recognition service not available',
+                'success': False
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Get base64 image from request
+        image_data = request.data.get('image')
+        if not image_data:
+            return Response({
+                'error': 'No image data provided',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Decode base64 to image
+        if image_data.startswith('data:image'):
+            image_data = image_data.split(',')[1]
+        
+        img_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            return Response({
+                'error': 'Failed to decode image',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Perform face recognition
+        result = deep_face_service.recognize_face_realtime(frame)
+        
+        if not result['success']:
+            return Response({
+                'error': result.get('error', 'Recognition failed'),
+                'success': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Convert annotated frame to base64
+        annotated_frame = result['frame']
+        _, buffer = cv2.imencode('.jpg', annotated_frame)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return Response({
+            'image': f"data:image/jpeg;base64,{img_base64}",
+            'faces': result['faces'],
+            'face_count': result['face_count'],
+            'success': True
+        })
+        
     except Exception as e:
         return Response({
             'error': str(e),

@@ -22,6 +22,8 @@ class DlibFaceRecognitionService:
         try:
             self._lazy_import()
             fr = self._fr
+            import io
+            from PIL import Image
 
             # File path
             if isinstance(image_data, str) and os.path.exists(image_data):
@@ -31,19 +33,32 @@ class DlibFaceRecognitionService:
             if isinstance(image_data, str) and image_data.startswith('data:image'):
                 b64 = image_data.split(',')[1]
                 img_bytes = base64.b64decode(b64)
-                import io
-                from PIL import Image
+                if len(img_bytes) == 0:
+                    print("Dlib: Empty base64 image data")
+                    return None
                 im = Image.open(io.BytesIO(img_bytes)).convert('RGB')
-                return np.array(im)
+                return np.array(im, dtype=np.uint8)
 
-            # File-like
+            # File-like (Django UploadedFile, etc.)
             if hasattr(image_data, 'read'):
+                # Reset file pointer to beginning if possible
+                if hasattr(image_data, 'seek'):
+                    image_data.seek(0)
+                
                 content = image_data.read()
-                import io
-                from PIL import Image
+                
+                # Validate we have data
+                if not content or len(content) == 0:
+                    print("Dlib: Empty image file")
+                    return None
+                
                 im = Image.open(io.BytesIO(content)).convert('RGB')
-                return np.array(im)
-        except Exception:
+                # Convert to numpy array with correct format for dlib
+                img_array = np.array(im, dtype=np.uint8)
+                print(f"✓ Dlib loaded image successfully (shape: {img_array.shape}, dtype: {img_array.dtype})")
+                return img_array
+        except Exception as e:
+            print(f"Dlib: Error loading image: {e}")
             return None
         return None
 
@@ -81,45 +96,68 @@ class DlibFaceRecognitionService:
             fr = self._fr
             image = self._load_image(image_data)
             if image is None:
+                print("  Dlib: Failed to load image")
                 return None, 0
 
+            print(f"  Dlib: Detecting faces in image...")
             boxes = fr.face_locations(image, model='hog')
             if not boxes:
+                print(f"  Dlib: No faces detected in image")
                 return None, 0
+            
+            print(f"  Dlib: Found {len(boxes)} face(s), computing encodings...")
             encodings = fr.face_encodings(image, known_face_locations=boxes)
             if not encodings:
+                print(f"  Dlib: Failed to compute face encodings")
                 return None, 0
             probe = encodings[0]
 
             best_user = None
             best_dist = 1e9
+            compatible_count = 0
 
+            print(f"  Dlib: Comparing with {len(stored_encodings)} stored encoding(s)...")
             for user_id, stored in stored_encodings:
                 vec = None
                 if isinstance(stored, dict) and stored.get('model') == 'dlib' and isinstance(stored.get('encoding'), list):
                     vec = np.array(stored['encoding'], dtype=np.float32)
+                    compatible_count += 1
                 elif isinstance(stored, list) and len(stored) == 128:
                     vec = np.array(stored, dtype=np.float32)
+                    compatible_count += 1
                 else:
+                    print(f"  Dlib: Skipping incompatible encoding for user {user_id}")
                     continue  # skip non-dlib or incompatible encodings
 
                 # Euclidean distance (face_recognition default)
                 dist = np.linalg.norm(vec - probe)
+                print(f"  Dlib: User {user_id} - distance: {dist:.4f}")
                 if dist < best_dist:
                     best_dist = dist
                     best_user = user_id
 
+            print(f"  Dlib: Checked {compatible_count} compatible encoding(s)")
+            
             if best_user is None:
+                print(f"  Dlib: No compatible encodings found")
                 return None, 0
 
             # Convert distance to confidence roughly (inverse mapping)
             # Typical threshold ~0.6. We map confidence as 1 - (dist / 0.6) clipped to [0,1]
             confidence = max(0.0, min(1.0, 1.0 - (best_dist / 0.6)))
+            print(f"  Dlib: Best match - User {best_user}, distance: {best_dist:.4f}, confidence: {confidence:.2f}")
+            
             # Accept only if below threshold
             if best_dist <= 0.6:
+                print(f"  Dlib: Match ACCEPTED (distance {best_dist:.4f} <= 0.6)")
                 return best_user, confidence
+            
+            print(f"  Dlib: Match REJECTED (distance {best_dist:.4f} > 0.6)")
             return None, confidence
-        except Exception:
+        except Exception as e:
+            print(f"  Dlib: Exception during recognition: {e}")
+            import traceback
+            traceback.print_exc()
             return None, 0
 
 
