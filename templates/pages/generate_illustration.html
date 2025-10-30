@@ -1,0 +1,217 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Generate Illustration - {{ course.title }}</title>
+  
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-icons.css' %}?v=2.1.1" rel="stylesheet" />
+  <link href="{% static 'css/nucleo-svg.css' %}?v=2.1.1" rel="stylesheet" />
+  <link href="{% static 'css/argon-dashboard.css' %}?v=2.1.1" rel="stylesheet" />
+  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  
+  <!-- Sidebar -->
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+    <hr class="horizontal dark mt-0">
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-tv-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload_course' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Upload Course</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'profile' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-single-02 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Profile</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <!-- Navbar -->
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Dashboard</a></li>
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'course_detail' course.id %}">{{ course.title }}</a></li>
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'course_illustrations' course.id %}">Illustrations</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Generate</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">Generate AI Illustration</h6>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+          <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <div class="input-group">
+              <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
+              <input type="text" class="form-control" placeholder="Type here...">
+            </div>
+          </div>
+          <ul class="navbar-nav justify-content-end">
+            {% if user.is_authenticated %}
+            <li class="nav-item d-flex align-items-center">
+              <a href="{% url 'profile' %}" class="nav-link text-white font-weight-bold px-0">
+                <i class="fa fa-user me-sm-1"></i>
+                <span class="d-sm-inline d-none">{{ user.username }}</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{% url 'logout' %}" class="nav-link text-white font-weight-bold px-0">
+                <i class="fas fa-sign-out-alt me-sm-1"></i>
+                <span class="d-sm-inline d-none">Logout</span>
+              </a>
+            </li>
+            {% else %}
+            <li class="nav-item d-flex align-items-center">
+              <a href="{% url 'signin' %}" class="nav-link text-white font-weight-bold px-0">
+                <i class="fa fa-user me-sm-1"></i>
+                <span class="d-sm-inline d-none">Sign In</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header pb-0">
+              <h6>Generate AI-Powered Illustration</h6>
+              <p class="text-sm mb-0">Describe the image you want to generate and let AI create it for you.</p>
+            </div>
+            <div class="card-body">
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+
+              <form method="POST" id="generateForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                  <label for="description" class="form-label">Image Description *</label>
+                  <textarea class="form-control" id="description" name="description" rows="4" 
+                            placeholder="Describe the image you want to generate. Be specific and detailed. For example: 'A futuristic classroom with holographic displays showing DNA structure, students wearing AR glasses, bright lighting'"
+                            required></textarea>
+                  <div class="form-text">The more detailed your description, the better the result!</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="provider" class="form-label">AI Provider</label>
+                  <select class="form-select" id="provider" name="provider">
+                    <option value="huggingface" selected>Stable Diffusion XL (Hugging Face) - FREE ⭐</option>
+                    <option value="openai">DALL-E 3 (OpenAI) - High Quality (Paid)</option>
+                    <option value="stability">Stable Diffusion (Stability AI) - Balanced (Paid)</option>
+                  </select>
+                  <div class="form-text">Hugging Face is free and recommended for most users</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="tags" class="form-label">Tags (Optional)</label>
+                  <input type="text" class="form-control" id="tags" name="tags" 
+                         placeholder="e.g., education, science, technology (comma separated)">
+                  <div class="form-text">Add tags to help organize illustrations</div>
+                </div>
+
+                <div class="alert alert-info" role="alert">
+                  <i class="fas fa-info-circle"></i>
+                  <strong>Note:</strong> Image generation may take 10-30 seconds. Hugging Face is FREE and doesn't require payment. 
+                  Make sure you have configured your Hugging Face API key in the .env file (get one free at huggingface.co).
+                </div>
+
+                <div class="d-flex justify-content-between">
+                  <a href="{% url 'course_illustrations' course.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                  </a>
+                  <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-magic"></i> Generate Illustration
+                  </button>
+                </div>
+              </form>
+
+              <div id="loadingIndicator" class="text-center mt-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-sm">Generating your illustration... This may take a moment.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Example Prompts Card -->
+          <div class="card mt-4">
+            <div class="card-header pb-0">
+              <h6>Example Prompts</h6>
+            </div>
+            <div class="card-body">
+              <p class="text-sm mb-2"><strong>Educational Illustration:</strong></p>
+              <p class="text-xs text-secondary mb-3">"An anatomical diagram of the human heart with labeled chambers, vessels, and valves, medical illustration style, clean and educational"</p>
+              
+              <p class="text-sm mb-2"><strong>Scientific Concept:</strong></p>
+              <p class="text-xs text-secondary mb-3">"A visualization of photosynthesis in a plant cell, showing chloroplasts, sunlight, CO2, and glucose production, vibrant colors, scientific illustration"</p>
+              
+              <p class="text-sm mb-2"><strong>Historical Scene:</strong></p>
+              <p class="text-xs text-secondary mb-3">"Ancient Greek philosophers discussing in the Agora, classical columns, togas, scrolls, warm Mediterranean lighting, historical accuracy"</p>
+              
+              <p class="text-sm mb-2"><strong>Technology:</strong></p>
+              <p class="text-xs text-secondary">"Neural network visualization with interconnected nodes, data flowing through layers, glowing connections, dark background, modern tech aesthetic"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}?v=2.1.0"></script>
+  
+  <script>
+    document.getElementById('generateForm').addEventListener('submit', function() {
+      document.getElementById('loadingIndicator').style.display = 'block';
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    });
+  </script>
+</body>
+</html>

@@ -85,6 +85,34 @@ class EngagementSession(models.Model):
         return f"{self.user.username} - {self.course.title} Session"
 
 
+class Illustration(models.Model):
+    """Model for storing media and illustrations related to courses"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='illustrations')
+    description = models.TextField(help_text="Text description used to generate the image")
+    image_url = models.URLField(blank=True, help_text="URL of generated image")
+    image_file = models.ImageField(upload_to='illustrations/', null=True, blank=True, help_text="Locally stored image file")
+    
+    # Generation metadata
+    ai_generated = models.BooleanField(default=False)
+    generation_prompt = models.TextField(blank=True, help_text="Full prompt used for AI generation")
+    generation_service = models.CharField(max_length=50, blank=True, help_text="AI service used (e.g., DALL-E, Stable Diffusion)")
+    generation_timestamp = models.DateTimeField(null=True, blank=True)
+    
+    # Additional metadata
+    tags = models.JSONField(default=list, blank=True, help_text="Tags for categorization")
+    order = models.IntegerField(default=0, help_text="Display order in course")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', '-created_at']
+    
+    def __str__(self):
+        return f"{self.course.title} - {self.description[:50]}..."
+
+
 class AnalyticsService(models.Model):
     """Model for storing analytics and AI service configurations"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

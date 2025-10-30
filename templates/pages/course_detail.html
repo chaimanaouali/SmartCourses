@@ -190,7 +190,12 @@
                       {% if user.is_authenticated %}
                         {% if is_enrolled %}
                         <p class="text-success"><i class="ni ni-check-bold"></i> You are enrolled in this course</p>
-                        <a href="{% url 'start_learning' course.id %}" class="btn btn-outline-primary btn-sm w-100 mb-2">Start Learning</a>
+                        <a href="{% url 'start_learning' course.id %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                          <i class="ni ni-button-play"></i> Start Learning
+                        </a>
+                        <a href="{% url 'course_illustrations' course.id %}" class="btn btn-outline-info btn-sm w-100 mb-2">
+                          <i class="ni ni-image"></i> View Illustrations
+                        </a>
                         {% else %}
                         <a href="{% url 'enroll_course' course.id %}" class="btn btn-primary btn-sm w-100 mb-2">Enroll Now</a>
                         {% endif %}

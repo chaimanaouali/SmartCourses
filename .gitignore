@@ -1,47 +1,44 @@
-# macOS
-.DS_Store
-
 # Python
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
-__pycache__/
+.Python
 *.egg-info/
 dist/
 build/
 
-# Virtual Environment - NEVER COMMIT THIS
+# Virtual Environment
 venv/
 env/
 ENV/
-.venv/
 
 # Django
 *.log
-*.pot
-*.pyc
 db.sqlite3
 db.sqlite3-journal
-/media/
-/staticfiles/
-/static/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Large Model Files - Use Git LFS or download separately
-face-recognition-model/*.h5
-face-recognition-model/*.pkl
-*.h5
-*.pkl
-
-# OS
-Thumbs.db
+staticfiles/
+media/
 
 # Environment variables
 .env
 .env.local
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (temporary files)
+*.md.backup
