@@ -26,6 +26,7 @@ class Quiz(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_quizzes')
     created_at = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
+    deadline = models.DateTimeField(null=True, blank=True, help_text="Quiz deadline for completion")
     
     # Quiz settings
     quiz_type = models.CharField(max_length=20, choices=QUIZ_TYPES, default='auto')

@@ -148,7 +148,7 @@
                       <div class="col-md-6">
                         <div class="form-group">
                           <label for="username" class="form-control-label">Username</label>
-                          <input class="form-control" type="text" name="username" id="username" value="{{ user.username }}" readonly>
+                          <input class="form-control" type="text" name="username" id="username" value="{{ user.username }}">
                         </div>
                       </div>
                       <div class="col-md-6">
@@ -159,33 +159,24 @@
                       </div>
                     </div>
                     
+                    <!-- First/Last Name fields removed as requested -->
+
                     <div class="row">
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label for="first_name" class="form-control-label">First Name</label>
-                          <input class="form-control" type="text" name="first_name" id="first_name" value="{{ user.first_name }}">
+                          <label for="new_password" class="form-control-label">New Password</label>
+                          <input class="form-control" type="password" name="new_password" id="new_password" autocomplete="new-password">
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label for="last_name" class="form-control-label">Last Name</label>
-                          <input class="form-control" type="text" name="last_name" id="last_name" value="{{ user.last_name }}">
+                          <label for="confirm_password" class="form-control-label">Confirm New Password</label>
+                          <input class="form-control" type="password" name="confirm_password" id="confirm_password" autocomplete="new-password">
                         </div>
                       </div>
                     </div>
 
                     <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group">
-                          <label for="preferred_language" class="form-control-label">Preferred Language</label>
-                          <select class="form-control" name="preferred_language" id="preferred_language">
-                            <option value="en" {% if user_profile.preferred_language == 'en' %}selected{% endif %}>English</option>
-                            <option value="fr" {% if user_profile.preferred_language == 'fr' %}selected{% endif %}>French</option>
-                            <option value="es" {% if user_profile.preferred_language == 'es' %}selected{% endif %}>Spanish</option>
-                            <option value="de" {% if user_profile.preferred_language == 'de' %}selected{% endif %}>German</option>
-                          </select>
-                        </div>
-                      </div>
                       <div class="col-md-6">
                         <div class="form-group">
                           <label for="profile_image" class="form-control-label">Profile Image</label>

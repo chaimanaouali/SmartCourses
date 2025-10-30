@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+  <title>{{ workspace.name }} - Workspace</title>
+</head>
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <main class="main-content position-relative border-radius-lg">
+    <div class="container-fluid py-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-10 col-md-11">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center pb-0">
+              <h5 class="mb-0">Workspace: {{ workspace.name }}</h5>
+              <div>
+                {% if user.is_authenticated and user == workspace.owner %}
+                  <a href="{% url 'workspace_update' workspace.slug %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
+                {% endif %}
+                <a href="{% url 'upload_course' %}" class="btn btn-primary btn-sm">Add Course</a>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                {% for course in courses %}
+                <div class="col-md-4 mb-3">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="card-title">{{ course.title }}</h6>
+                      <p class="text-sm text-muted">{{ course.description|truncatewords:20 }}</p>
+                      <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary btn-sm">Open</a>
+                    </div>
+                  </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                  <div class="alert alert-info">No courses yet in this workspace.</div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+
+

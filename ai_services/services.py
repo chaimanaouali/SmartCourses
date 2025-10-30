@@ -37,21 +37,21 @@ except Exception as e:
 
 class ImageGenerationService:
     """Service for AI-powered image generation"""
-    
+
     def __init__(self):
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.huggingface_api_key = os.getenv('HUGGINGFACE_API_KEY')
         self.stability_api_key = os.getenv('STABILITY_API_KEY')
-    
+
     def generate_image(self, text_description, provider='openai', size='1024x1024', quality='standard'):
         """Generate image from text description using specified AI provider
-        
+
         Args:
             text_description (str): Text description to generate image from
             provider (str): AI provider ('openai', 'huggingface', 'stability')
             size (str): Image size (e.g., '1024x1024', '512x512')
             quality (str): Quality level ('standard', 'hd')
-            
+
         Returns:
             dict: {"success": bool, "image_url": str, "image_data": bytes, "error": str}
         """
@@ -63,7 +63,7 @@ class ImageGenerationService:
             return self._generate_with_stability(text_description)
         else:
             return {"success": False, "error": "Unknown provider"}
-    
+
     def _generate_with_openai(self, prompt, size='1024x1024', quality='standard'):
         """Generate image using OpenAI DALL-E API"""
         if not self.openai_api_key or self.openai_api_key == 'your_openai_api_key_here':
@@ -72,11 +72,11 @@ class ImageGenerationService:
                 "error": "OpenAI API key not configured",
                 "placeholder": True
             }
-        
+
         try:
             import openai
             client = openai.OpenAI(api_key=self.openai_api_key)
-            
+
             response = client.images.generate(
                 model="dall-e-3",
                 prompt=prompt,
@@ -84,9 +84,9 @@ class ImageGenerationService:
                 quality=quality,
                 n=1,
             )
-            
+
             image_url = response.data[0].url
-            
+
             # Download the image
             image_response = requests.get(image_url)
             if image_response.status_code == 200:
@@ -98,10 +98,10 @@ class ImageGenerationService:
                 }
             else:
                 return {"success": False, "error": "Failed to download generated image"}
-                
+
         except Exception as e:
             return {"success": False, "error": f"OpenAI generation error: {str(e)}"}
-    
+
     def _generate_with_huggingface(self, prompt):
         """Generate image using Hugging Face Stable Diffusion"""
         if not self.huggingface_api_key or self.huggingface_api_key == 'your_huggingface_api_key_here':
@@ -110,17 +110,17 @@ class ImageGenerationService:
                 "error": "Hugging Face API key not configured",
                 "placeholder": True
             }
-        
+
         try:
             API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
             headers = {"Authorization": f"Bearer {self.huggingface_api_key}"}
-            
+
             response = requests.post(
                 API_URL,
                 headers=headers,
                 json={"inputs": prompt}
             )
-            
+
             if response.status_code == 200:
                 return {
                     "success": True,
@@ -130,10 +130,10 @@ class ImageGenerationService:
                 }
             else:
                 return {"success": False, "error": f"Hugging Face API error: {response.text}"}
-                
+
         except Exception as e:
             return {"success": False, "error": f"Hugging Face generation error: {str(e)}"}
-    
+
     def _generate_with_stability(self, prompt):
         """Generate image using Stability AI"""
         if not self.stability_api_key:
@@ -142,14 +142,14 @@ class ImageGenerationService:
                 "error": "Stability AI API key not configured",
                 "placeholder": True
             }
-        
+
         try:
             API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
             headers = {
                 "Authorization": f"Bearer {self.stability_api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             data = {
                 "text_prompts": [{"text": prompt}],
                 "cfg_scale": 7,
@@ -158,9 +158,9 @@ class ImageGenerationService:
                 "samples": 1,
                 "steps": 30,
             }
-            
+
             response = requests.post(API_URL, headers=headers, json=data)
-            
+
             if response.status_code == 200:
                 data = response.json()
                 image_data = base64.b64decode(data["artifacts"][0]["base64"])
@@ -172,27 +172,27 @@ class ImageGenerationService:
                 }
             else:
                 return {"success": False, "error": f"Stability AI error: {response.text}"}
-                
+
         except Exception as e:
             return {"success": False, "error": f"Stability AI generation error: {str(e)}"}
-    
+
     def create_illustration_from_description(self, course, description, provider='openai', tags=None):
         """Create an Illustration object with AI-generated image
-        
+
         Args:
             course: Course object
             description (str): Text description for image generation
             provider (str): AI provider to use
             tags (list): Optional list of tags
-            
+
         Returns:
             Illustration object or None if generation failed
         """
         from course_app.models import Illustration
-        
+
         # Generate the image
         result = self.generate_image(description, provider=provider)
-        
+
         if not result["success"]:
             print(f"Image generation failed: {result.get('error')}")
             # Return placeholder illustration if API not configured
@@ -208,7 +208,7 @@ class ImageGenerationService:
                 )
                 return illustration
             return None
-        
+
         # Create Illustration object
         illustration = Illustration.objects.create(
             course=course,
@@ -220,13 +220,13 @@ class ImageGenerationService:
             generation_timestamp=timezone.now(),
             tags=tags or []
         )
-        
+
         # Save image file if we have image data
         if result.get('image_data'):
             image_content = ContentFile(result['image_data'])
             filename = f"illustration_{illustration.id}.png"
             illustration.image_file.save(filename, image_content, save=True)
-        
+
         return illustration
 
 
@@ -340,20 +340,48 @@ class AIServiceManager:
         except Exception as e:
             print(f"Error generating image: {e}")
             return {"success": False, "error": str(e)}
-    
+            return None
+
+    # ---------- Course helpers ----------
+    def summarize_course_text(self, title: str, description: str, transcript: str | None) -> str:
+        """Create a concise, student-friendly summary of a course.
+        Uses Groq LLM with structured instructions.
+        """
+        base_context = f"Course Title: {title}\n\nDescription:\n{description}\n"
+        if transcript:
+            base_context += f"\nTranscript (may be long; prioritize salient points):\n{transcript[:8000]}"
+        prompt = (
+            "Write a concise summary of this course for students."
+            " Focus on learning goals, key modules, and prerequisites."
+            " Output 5-8 bullet points and a short paragraph (≤120 words)."
+        )
+        return self.generate_text_response(prompt, context=base_context)
+
+    def explain_course_topic(self, title: str, description: str, transcript: str | None, question: str) -> str:
+        """Explain a topic or question using the course material as context."""
+        base_context = f"Course Title: {title}\n\nDescription:\n{description}\n"
+        if transcript:
+            base_context += f"\nTranscript excerpt:\n{transcript[:8000]}"
+        prompt = (
+            "Act as a teaching assistant. Explain the user's question clearly,"
+            " with step-by-step reasoning and examples. If math/code is useful,"
+            " include it. End with 3 practice questions. User question: " + question
+        )
+        return self.generate_text_response(prompt, context=base_context)
+
     def recognize_face(self, image_data):
         """Recognize face in image using the face recognition service"""
         try:
             # Get all user profiles with face encodings
             from course_app.models import UserProfile
             profiles = UserProfile.objects.exclude(face_encoding__isnull=True)
-            
+
             print(f"\n🔍 Starting face recognition...")
             print(f"📊 Found {profiles.count()} registered face(s) in database")
-            
+
             if not profiles:
                 return None, "No registered faces found"
-            
+
             # Prepare stored encodings
             stored_encodings = []
             for p in profiles:
@@ -365,10 +393,10 @@ class AIServiceManager:
                         encoding_type = f"list[{len(p.face_encoding)}]"
                     print(f"  👤 User: {p.user.username} (ID: {p.user.id}, encoding: {encoding_type})")
                     stored_encodings.append((p.user.id, p.face_encoding))
-            
+
             if not stored_encodings:
                 return None, "No valid face encodings found"
-            
+
             # Try deep learning service first (highest accuracy)
             user_id, confidence = (None, 0)
             if deep_face_service is not None:
@@ -382,7 +410,7 @@ class AIServiceManager:
                     user_id, confidence = (None, 0)
             else:
                 print(f"⚠️  Deep learning service not available")
-            
+
             # Fallback to dlib-based recognition
             if user_id is None and dlib_face_service is not None:
                 print(f"\n🔄 Trying Dlib recognition (fallback)...")
@@ -396,7 +424,7 @@ class AIServiceManager:
             else:
                 if user_id is None:
                     print(f"⚠️  Dlib service not available")
-            
+
             # Final fallback to OpenCV service
             if user_id is None:
                 print(f"\n🔄 Trying OpenCV recognition (final fallback)...")
@@ -405,16 +433,16 @@ class AIServiceManager:
                     print(f"✅ OpenCV recognition SUCCESS: User {user_id}, confidence {confidence:.2f}")
                 else:
                     print(f"❌ OpenCV recognition failed")
-            
+
             if user_id:
                 from django.contrib.auth.models import User
                 user = User.objects.get(id=user_id)
                 print(f"🎉 Final result: Recognized as {user.username}\n")
                 return user, confidence
-            
+
             print(f"❌ Final result: Face not recognized by any service\n")
             return None, "Face not recognized"
-            
+
         except Exception as e:
             print(f"❌ Error recognizing face: {e}")
             import traceback
@@ -434,7 +462,7 @@ class AIServiceManager:
                 except Exception as e:
                     print(f"Deep learning registration failed: {e}")
                     success, result = (False, None)
-            
+
             # Fallback to dlib-based registration
             if not success and dlib_face_service is not None:
                 try:
@@ -444,23 +472,23 @@ class AIServiceManager:
                 except Exception as e:
                     print(f"Dlib registration failed: {e}")
                     success, result = (False, None)
-            
+
             # Final fallback to OpenCV service
             if not success:
                 success, result = face_recognition_service.register_face(user, image_data)
                 if success:
                     print(f"✓ OpenCV registration successful for user {user.username}")
-            
+
             return success, result
         except Exception as e:
             print(f"Error registering face: {e}")
             return False, str(e)
-    
+
     def detect_engagement(self, image_data):
         """Detect user engagement from facial expressions"""
         try:
             engagement_status = face_recognition_service.detect_engagement(image_data)
-            
+
             # Convert to score-based format
             if "Focused" in engagement_status:
                 score = 0.9
@@ -470,7 +498,7 @@ class AIServiceManager:
                 score = 0.0
             else:
                 score = 0.5
-            
+
             return {
                 'engagement_score': score,
                 'face_detected': "No" not in engagement_status,

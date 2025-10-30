@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+  <title>My Workspaces</title>
+</head>
+<body class="g-sidenav-show bg-gray-100">
+  <main class="main-content position-relative border-radius-lg">
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">My Workspaces</h5>
+        <a href="{% url 'workspace_create' %}" class="btn btn-primary">Create Workspace</a>
+      </div>
+
+      <div class="row">
+        {% for ws in workspaces %}
+        <div class="col-md-4 mb-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title mb-2">{{ ws.name }}</h6>
+              <p class="text-sm text-muted mb-3">Created {{ ws.created_at|date:"M d, Y" }}</p>
+              <div class="d-flex gap-2 mt-2">
+                <a href="{% url 'workspace_detail' ws.slug %}" class="btn btn-outline-primary btn-sm">Open</a>
+                <a href="{% url 'workspace_update' ws.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                <a href="{% url 'workspace_delete' ws.slug %}" class="btn btn-outline-danger btn-sm">Delete</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+          <div class="alert alert-info">You have no workspaces yet. Create one to start organizing your courses.</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+
+

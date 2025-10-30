@@ -193,6 +193,17 @@
             </div>
           </div>
 
+          <!-- Generate AI Quiz -->
+          <div class="card mb-4">
+            <div class="card-header pb-0">
+              <h6 class="mb-0">🧠 Generate AI Quiz</h6>
+            </div>
+            <div class="card-body">
+              <button id="generateQuizBtn" class="btn btn-primary w-100 mb-2">Generate AI Quiz</button>
+              <div id="generateQuizStatus" class="text-center text-muted small"></div>
+            </div>
+          </div>
+
           <!-- Related Quizzes -->
           {% if quizzes %}
           <div class="card mb-4">
@@ -253,6 +264,40 @@
   <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
   <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
   <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const button = document.getElementById('generateQuizBtn');
+      const statusText = document.getElementById('generateQuizStatus');
+      if (button) {
+        button.addEventListener('click', function() {
+          button.disabled = true;
+          statusText.textContent = 'Generating quiz, please wait...';
+          const formData = new FormData();
+          formData.append('course_id', '{{ course.id }}');
+          fetch('/quiz/api/generate/', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.quiz_id) {
+              statusText.textContent = 'Quiz generated! Redirecting...';
+              window.location.href = `/quiz/quiz/${data.quiz_id}/start/`;
+            } else {
+              statusText.textContent = data.error || data.message || 'Failed to generate quiz.';
+              button.disabled = false;
+            }
+          })
+          .catch(() => {
+            statusText.textContent = 'Error contacting server.';
+            button.disabled = false;
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
 

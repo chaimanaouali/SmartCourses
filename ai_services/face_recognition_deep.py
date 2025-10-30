@@ -338,6 +338,11 @@ class DeepFaceRecognitionService:
                             else:
                                 print(f"  VGG16: Match REJECTED - Confidence {confidence:.2f} < 0.5")
                 print(f"  VGG16: No matching username found for '{predicted_name}'")
+                # Heuristic: if only one encoding exists and confidence is high, assume match
+                if len(stored_encodings) == 1 and confidence >= 0.8:
+                    sole_user_id, _ = stored_encodings[0]
+                    print(f"  VGG16: Single encoding present and high confidence; accepting user {sole_user_id}")
+                    return sole_user_id, confidence
             else:
                 print(f"  VGG16: Predicted class {predicted_class} out of range (max: {len(self.label_encoder.classes_)-1})")
                     

@@ -168,7 +168,7 @@
               <h6 class="mb-0">🤖 Generate New AI Quiz</h6>
             </div>
             <div class="card-body">
-              <form method="post" action="{% url 'quiz_app:generate_quiz_api' %}">
+              <form id="generateQuizForm" method="post" action="{% url 'quiz_app:generate_quiz_api' %}">
                 {% csrf_token %}
                 <div class="row">
                   <div class="col-md-4">
@@ -252,7 +252,7 @@
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="quizTableBody">
                       {% for quiz in quizzes %}
                       <tr>
                         <td>
@@ -323,7 +323,7 @@
   <script>
     // Handle quiz generation form
     document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form[action*="generate_quiz_api"]');
+      const form = document.getElementById('generateQuizForm');
       if (form) {
         form.addEventListener('submit', function(e) {
           e.preventDefault();
@@ -340,24 +340,64 @@
             method: 'POST',
             body: formData,
             headers: {
-              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
           })
           .then(response => response.json())
           .then(data => {
             if (data.success === true) {
-              // Show success message
-              showNotification('Quiz generated successfully! Redirecting...', 'success');
-              // Redirect to the generated quiz
-              setTimeout(() => {
-                window.location.href = `/quiz/quiz/${data.quiz_id}/`;
-              }, 1500);
+              // Optimistically add the new quiz row at the top of the table
+              const tbody = document.getElementById('quizTableBody');
+              if (tbody) {
+                const selectedCourse = form.querySelector('select[name="course_id"] option:checked')?.textContent || 'Course';
+                const difficulty = form.querySelector('select[name="difficulty"]').value;
+                const numQuestions = form.querySelector('select[name="num_questions"]').value;
+                const diffBadge = difficulty === 'easy' ? 'success' : (difficulty === 'medium' ? 'warning' : 'danger');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td>
+                    <div class="d-flex px-2 py-1">
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm">AI Generated Quiz - ${selectedCourse}</h6>
+                        <p class="text-xs text-secondary mb-0">Auto-generated quiz</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="text-xs font-weight-bold mb-0">${selectedCourse}</p>
+                    <p class="text-xs text-secondary mb-0">By {{ user.username }}</p>
+                  </td>
+                  <td class="align-middle text-center text-sm">
+                    <span class="badge badge-sm bg-gradient-${diffBadge}">${difficulty}</span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-xs font-weight-bold">${numQuestions}</span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="badge badge-sm bg-gradient-primary">🤖 AI</span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <div class="btn-group" role="group">
+                      <a href="/quiz/quiz/${data.quiz_id}/" class="btn btn-outline-primary btn-sm">
+                        <i class="ni ni-send me-1"></i>Open
+                      </a>
+                    </div>
+                  </td>
+                `;
+                tbody.prepend(tr);
+              }
+              showNotification('Quiz generated successfully!', 'success');
             } else {
-              showNotification('Error generating quiz: ' + (data.message || 'Unknown error'), 'error');
+              // Soft error with concise message
+              showNotification('Could not generate quiz. Please try again.', 'error');
             }
           })
           .catch(error => {
-            showNotification('Error generating quiz: ' + error.message, 'error');
+            // Silent fail or concise error
+            showNotification('Network error. Please retry.', 'error');
           })
           .finally(() => {
             // Reset button

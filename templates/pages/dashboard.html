@@ -52,6 +52,14 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'workspace_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-archive-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workspaces</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'upload_course' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
@@ -67,12 +75,13 @@
             <span class="nav-link-text ms-1">AI Quizzes</span>
           </a>
         </li>
+        
         <li class="nav-item">
-          <a class="nav-link" href="#">
+          <a class="nav-link" href="{% url 'workshop_list' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
+              <i class="ni ni-badge text-dark text-sm opacity-10"></i>
             </div>
-            <span class="nav-link-text ms-1">Quizzes</span>
+            <span class="nav-link-text ms-1">Workshops</span>
           </a>
         </li>
         <li class="nav-item">
@@ -134,7 +143,7 @@
           <div class="ms-md-auto pe-md-3 d-flex align-items-center">
             <div class="input-group">
               <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
-              <input type="text" class="form-control" placeholder="Search courses...">
+              <input type="text" class="form-control" placeholder="Search courses..." id="search-input-main">
             </div>
           </div>
           <ul class="navbar-nav justify-content-end">
@@ -188,19 +197,16 @@
     
     <div class="container-fluid py-4">
       <div class="row">
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+        <div class="col-xl-4 col-sm-6 mb-xl-0 mb-4">
           <div class="card">
             <div class="card-body p-3">
               <div class="row">
                 <div class="col-8">
                   <div class="numbers">
                     <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Courses</p>
-                    <h5 class="font-weight-bolder">
-                      {{ courses|length }}
-                    </h5>
+                    <h5 class="font-weight-bolder">{{ total_courses }}</h5>
                     <p class="mb-0">
-                      <span class="text-success text-sm font-weight-bolder">+{{ courses|length }}</span>
-                      available courses
+                      <span class="text-success text-sm font-weight-bolder">+{{ total_courses }}</span> available courses
                     </p>
                   </div>
                 </div>
@@ -213,75 +219,44 @@
             </div>
           </div>
         </div>
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+        <div class="col-xl-4 col-sm-6 mb-xl-0 mb-4">
           <div class="card">
             <div class="card-body p-3">
               <div class="row">
                 <div class="col-8">
                   <div class="numbers">
-                    <p class="text-sm mb-0 text-uppercase font-weight-bold">AI Questions</p>
-                    <h5 class="font-weight-bolder">
-                      {% if user.is_authenticated %}{{ user.audio_questions.count }}{% else %}0{% endif %}
-                    </h5>
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Workspaces</p>
+                    <h5 class="font-weight-bolder">{{ total_workspaces }}</h5>
                     <p class="mb-0">
-                      <span class="text-info text-sm font-weight-bolder">Voice-powered</span>
-                      AI responses
+                      <span class="text-info text-sm font-weight-bolder">All user groups</span> workspaces
                     </p>
                   </div>
                 </div>
                 <div class="col-4 text-end">
-                  <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
-                    <i class="ni ni-microphone text-lg opacity-10" aria-hidden="true"></i>
+                  <div class="icon icon-shape bg-gradient-info shadow-info text-center rounded-circle">
+                    <i class="ni ni-archive-2 text-lg opacity-10" aria-hidden="true"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+        <div class="col-xl-4 col-sm-6">
           <div class="card">
             <div class="card-body p-3">
               <div class="row">
                 <div class="col-8">
                   <div class="numbers">
-                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Quizzes Taken</p>
-                    <h5 class="font-weight-bolder">
-                      {% if user.is_authenticated %}{{ user.quiz_attempts.count }}{% else %}0{% endif %}
-                    </h5>
+                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Workshops</p>
+                    <h5 class="font-weight-bolder">{{ total_workshops }}</h5>
                     <p class="mb-0">
-                      <span class="text-success text-sm font-weight-bolder">AI-Generated</span>
-                      quizzes
-                    </p>
-                  </div>
-                </div>
-                <div class="col-4 text-end">
-                  <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
-                    <i class="ni ni-paper-diploma text-lg opacity-10" aria-hidden="true"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-xl-3 col-sm-6">
-          <div class="card">
-            <div class="card-body p-3">
-              <div class="row">
-                <div class="col-8">
-                  <div class="numbers">
-                    <p class="text-sm mb-0 text-uppercase font-weight-bold">Learning Score</p>
-                    <h5 class="font-weight-bolder">
-                      {% if user.is_authenticated %}85%{% else %}0%{% endif %}
-                    </h5>
-                    <p class="mb-0">
-                      <span class="text-warning text-sm font-weight-bolder">+5%</span>
-                      this week
+                      <span class="text-warning text-sm font-weight-bolder">AI workshops</span> organized
                     </p>
                   </div>
                 </div>
                 <div class="col-4 text-end">
                   <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
-                    <i class="ni ni-chart-bar-32 text-lg opacity-10" aria-hidden="true"></i>
+                    <i class="ni ni-badge text-lg opacity-10" aria-hidden="true"></i>
                   </div>
                 </div>
               </div>
@@ -347,45 +322,97 @@
       </div>
       {% endif %}
       
-      <!-- Available Courses -->
-      <div class="row mt-4">
-        <div class="col-lg-12">
-          <div class="card">
-            <div class="card-header pb-0 p-3">
-              <div class="d-flex justify-content-between">
-                <h6 class="mb-2">Available Courses</h6>
-                {% if user.is_authenticated %}
-                <a href="{% url 'upload_course' %}" class="btn btn-primary btn-sm">Upload New Course</a>
-                {% endif %}
+      <!-- Add horizontal scroll CSS helper -->
+      <style>
+      .horizontal-scroll {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 1.5rem;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        scrollbar-width: thin;
+        scrollbar-color: #b7b7b7 #f7fafc;
+      }
+      .horizontal-scroll::-webkit-scrollbar {
+        height: 8px;
+      }
+      .horizontal-scroll::-webkit-scrollbar-thumb {
+        background: #b7b7b7;
+        border-radius: 10px;
+      }
+      .scroll-card {
+        min-width:320px; max-width:340px; flex:0 0 auto;
+      }
+      </style>
+      <!-- Workspaces Horizontal Scroll -->
+      <h6 class="mb-3">All Workspaces</h6>
+      <div class="horizontal-scroll workspaces-section">
+        {% for ws in workspaces_all %}
+          <div class="scroll-card card h-100" data-search="{{ ws.name|default:'' }} {{ ws.owner.username|default:'' }}">
+            <div class="card-body">
+              {% if ws.cover_image %}
+                <img src="{{ ws.cover_image.url }}" class="img-fluid rounded mb-2" style="max-height:160px; width:100%; object-fit:cover;" alt="cover">
+              {% else %}
+                <img src="{% static 'img/placeholders/workspace.png' %}" class="img-fluid rounded mb-2" style="max-height:160px; width:100%; object-fit:cover;" alt="cover">
+              {% endif %}
+              <h6 class="mb-1">{{ ws.name }}</h6>
+              <p class="text-sm text-muted mb-2">By {{ ws.owner.username }}</p>
+              <span class="badge bg-secondary mb-2">{{ ws.courses.count }} courses</span>
+              <p class="mb-2 text-sm text-muted">Created: {{ ws.created_at|date:'M d, Y' }}</p>
+              <div class="d-flex justify-content-end mt-2">
+                <a href="{% url 'workspace_detail' ws.slug %}" class="btn btn-outline-primary btn-sm">Open</a>
               </div>
             </div>
-            <div class="row p-3">
-              {% for course in courses %}
-              <div class="col-md-4 mb-3">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <h6 class="card-title">{{ course.title }}</h6>
-                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <small class="text-muted">By {{ course.instructor.username }}</small>
-                      <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View Course</a>
-                    </div>
-                  </div>
-                </div>
+          </div>
+        {% empty %}
+          <div class="alert alert-info">No workspaces found.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Courses Without Workspace Horizontal Scroll -->
+      <h6 class="mb-3">Courses Without Workspace</h6>
+      <div class="horizontal-scroll courses-section">
+        {% for course in courses_all %}
+          {% if not course.workspace %}
+          <div class="scroll-card card h-100" data-search="{{ course.title|default:'' }} {{ course.description|default:'' }} {{ course.instructor.username|default:'' }}">
+            <div class="card-body">
+              <h6 class="card-title">{{ course.title }}</h6>
+              <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">By {{ course.instructor.username }}</small>
+                <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View Course</a>
               </div>
-              {% empty %}
-              <div class="col-12">
-                <div class="text-center py-4">
-                  <i class="ni ni-books text-muted" style="font-size: 3rem;"></i>
-                  <h5 class="text-muted mt-3">No courses available yet</h5>
-                  <p class="text-muted">Be the first to upload a course!</p>
-                </div>
-              </div>
-              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        {% empty %}
+          <div class="alert alert-info">No courses without workspace found.</div>
+        {% endfor %}
+      </div>
+      
+      <!-- Recent Workshops -->
+      {% if recent_workshops %}
+      <h6 class="mb-3">Recent Workshops</h6>
+      <div class="horizontal-scroll workshops-section">
+        {% for workshop in recent_workshops %}
+        <div class="scroll-card card h-100" data-search="{{ workshop.title|default:'' }} {{ workshop.description|default:'' }} {{ workshop.created_by.username|default:'' }} {{ workshop.course.title|default:'' }}">
+          <div class="card-body">
+            {% if workshop.cover_image %}
+            <img src="{{ workshop.cover_image.url }}" class="img-fluid rounded mb-2" alt="cover" style="max-height:160px; width:100%; object-fit:cover;">
+            {% endif %}
+            <h6 class="mb-1">{{ workshop.title }}</h6>
+            <p class="text-sm text-muted mb-2">Course: {{ workshop.course.title }}</p>
+            <p class="text-sm text-muted mb-2">Scheduled: {{ workshop.scheduled_at|date:"M d, Y H:i" }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">By {{ workshop.created_by.username }}</small>
+              <a href="{% url 'workshop_detail' workshop.id %}?from=dashboard" class="btn btn-sm btn-outline-primary">Open</a>
             </div>
           </div>
         </div>
+        {% endfor %}
       </div>
+      {% endif %}
       
       <footer class="footer pt-3">
         <div class="container-fluid">
@@ -426,6 +453,7 @@
   <!-- Voice Recording Script -->
   <script>
     let mediaRecorder;
+    let mediaStream; // keep a reference to stop tracks and avoid browser capture limits
     let audioChunks = [];
     let isRecording = false;
     
@@ -444,6 +472,7 @@
     async function startRecording() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStream = stream;
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
         
@@ -454,6 +483,11 @@
         mediaRecorder.onstop = () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
           uploadAudioQuestion(audioBlob);
+          // Release microphone to avoid hitting browser capture quotas
+          try {
+            mediaStream?.getTracks()?.forEach(t => t.stop());
+          } catch (e) { /* no-op */ }
+          mediaStream = null;
         };
         
         mediaRecorder.start();
@@ -576,6 +610,39 @@
       alert('Settings functionality coming soon!');
     }
   </script>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.querySelector('input[type="text"][placeholder*="Search courses"], input#search-input-main, input[name="search"]');
+  if (!searchInput) return;
+  function normalize(txt) { return String(txt || '').toLowerCase(); }
+  function matches(card, q) {
+    return normalize(card.getAttribute('data-search')).includes(q);
+  }
+  function filterCards(sectionSelector, cardSelector) {
+    const cards = document.querySelectorAll(sectionSelector + ' ' + cardSelector);
+    let found = false;
+    cards.forEach(card => {
+      if (!searchInput.value) { card.style.display = ''; found=true; return; }
+      if (matches(card, normalize(searchInput.value))) {
+        card.style.display = '';
+        found = true;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+  searchInput.addEventListener('input', function() {
+    filterCards('.horizontal-scroll.workspaces-section', '.scroll-card');
+    filterCards('.horizontal-scroll.courses-section', '.scroll-card');
+    filterCards('.horizontal-scroll.workshops-section', '.scroll-card');
+  });
+  // Initial run
+  filterCards('.horizontal-scroll.workspaces-section', '.scroll-card');
+  filterCards('.horizontal-scroll.courses-section', '.scroll-card');
+  filterCards('.horizontal-scroll.workshops-section', '.scroll-card');
+});
+</script>
 </body>
 
 </html>
+

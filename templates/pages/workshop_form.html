@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+  <title>{% if workshop %}Edit Workshop{% else %}Create Workshop{% endif %}</title>
+</head>
+<body class="g-sidenav-show bg-gray-100">
+  <main class="main-content position-relative border-radius-lg">
+    <div class="container py-4">
+      <div class="card">
+        <div class="card-header pb-0">
+          <h6 class="mb-0">{% if workshop %}Edit Workshop{% else %}Create Workshop{% endif %}</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" class="" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Course</label>
+                {{ form.course }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Scheduled at</label>
+                {{ form.scheduled_at }}
+                <small class="text-muted d-block">Choose date and time</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Title</label>
+                {{ form.title }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                {{ form.description }}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Location</label>
+                {{ form.location }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Capacity</label>
+                {{ form.capacity }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Cover image</label>
+                {{ form.cover_image }}
+                {% if workshop and workshop.cover_image %}
+                <div class="mt-2">
+                  <img src="{{ workshop.cover_image.url }}" alt="Cover" class="img-fluid rounded" style="max-height:200px;">
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'workshop_list' %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+
+

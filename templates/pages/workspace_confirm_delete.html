@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}" rel="stylesheet" />
+  <title>Delete Workspace</title>
+</head>
+<body class="g-sidenav-show bg-gray-100">
+  <main class="main-content position-relative border-radius-lg">
+    <div class="container py-4">
+      <div class="card">
+        <div class="card-body">
+          <h6>Are you sure you want to delete the workspace "{{ workspace.name }}"?</h6>
+          <p class="text-sm text-muted">All courses inside will also be deleted.</p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'workspace_detail' workspace.slug %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+
+

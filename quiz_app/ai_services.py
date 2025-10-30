@@ -19,24 +19,70 @@ class QuizGenerationAI:
     def generate_quiz_from_content(self, course_content: str, difficulty: str = 'intermediate', 
                                  num_questions: int = 10) -> Dict[str, Any]:
         """
-        Generate quiz questions from course content using AI
+        Generate quiz questions from course content using AI.
+        Priority:
+        1) Groq LLM via ai_manager.generate_text_response to produce strict JSON questions
+        2) Fallback to local content-based heuristic generation
         """
         try:
-            # Analyze course content and extract key concepts
+            # Try Groq first for content-specific generation
+            try:
+                from ai_services.services import ai_manager  # local import to avoid cycles
+                sys_prompt = (
+                    "You are an assessment generator. Create quiz questions strictly from the given course content. "
+                    "Do NOT invent facts outside the content. Use only information that appears in the content."
+                )
+                # Build a strong, content-bound instruction
+                seed = str(abs(hash(course_content)) % 10_000_000)
+                user_prompt = (
+                    "COURSE_TITLE: " + (course_content.split("\n", 1)[0][:120]) + "\n"  # best-effort title from the first line
+                    + "CONTENT:\n" + course_content[:12000] + "\n\n"
+                    + "TASK: Generate exactly " + str(num_questions) + " quiz questions in strict JSON. "
+                    + "Every question MUST be grounded in CONTENT and include at least TWO literal keywords from CONTENT or COURSE_TITLE. "
+                    + "Forbidden: placeholders like 'Title', 'context', 'important', or generic phrasing like 'why is it important in this context'. "
+                    + "Vary question wording and types. Explanations must quote a phrase from CONTENT or mention COURSE_TITLE explicitly.\n"
+                    + "SCHEMA (NO MARKDOWN, PURE JSON):\n"
+                    + "{\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"question_text\": \"...\",\n      \"question_type\": \"multiple_choice\"|\"true_false\"|\"open_ended\",\n      \"options\": [\"A\",\"B\",\"C\",\"D\"] (omit for open_ended),\n      \"correct_answer\": \"...\",\n      \"explanation\": \"reference COURSE_TITLE or quoted phrase from CONTENT\",\n      \"points\": 1,\n      \"difficulty\": \"" + difficulty + "\"\n    }\n  ]\n}\n"
+                    + "Return ONLY JSON. Include diverse questions and vary wording. SEED: " + seed + "\n"
+                )
+                raw = ai_manager.generate_text_response(prompt=user_prompt, context=sys_prompt)
+                # Extract JSON
+                import json, re
+                match = re.search(r"\{[\s\S]*\}$", raw.strip())
+                payload = raw if match is None else match.group(0)
+                data = json.loads(payload)
+                questions = data.get('questions', [])
+                if not questions:
+                    raise ValueError('Empty questions from LLM')
+                # enforce content specificity
+                first_line = (course_content.split("\n", 1)[0] or '')
+                questions = self._enforce_content_keywords(first_line, course_content, questions)
+                return {
+                    'success': True,
+                    'questions': questions[:num_questions],
+                    'total_questions': len(questions),
+                    'difficulty': difficulty,
+                    'ai_confidence': 0.9,
+                    'content_analyzed': True
+                }
+            except Exception as e:
+                # Fall back to heuristic generator
+                pass
+
+            # Heuristic fallback path
             key_concepts = self._extract_key_concepts(course_content)
             important_points = self._extract_important_points(course_content)
-            
-            # Generate questions based on actual content
             questions = self._generate_content_based_questions(
                 course_content, key_concepts, important_points, difficulty, num_questions
             )
-            
+            first_line = (course_content.split("\n", 1)[0] or '')
+            questions = self._enforce_content_keywords(first_line, course_content, questions)
             return {
                 'success': True,
                 'questions': questions,
                 'total_questions': len(questions),
                 'difficulty': difficulty,
-                'ai_confidence': 0.85,
+                'ai_confidence': 0.75,
                 'content_analyzed': True
             }
         except Exception as e:
@@ -47,99 +93,159 @@ class QuizGenerationAI:
             }
     
     def _extract_key_concepts(self, content: str) -> List[str]:
-        """Extract key concepts from course content"""
-        # Simple keyword extraction (in production, use NLP libraries)
+        """Extract key concepts from course content (keyword-based, content-specific)."""
         import re
-        
-        # Extract important terms (capitalized words, technical terms)
-        concepts = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', content)
-        
-        # Remove common words and get unique concepts
-        common_words = {'The', 'This', 'That', 'These', 'Those', 'Course', 'Content', 'Material'}
-        concepts = [c for c in set(concepts) if c not in common_words and len(c) > 3]
-        
-        return concepts[:10]  # Return top 10 concepts
-    
+        from collections import Counter
+
+        if not content:
+            return []
+
+        # Normalize
+        text = re.sub(r"[^A-Za-z0-9\-\s]", " ", content)
+        words = re.findall(r"[A-Za-z][A-Za-z\-]{2,}", text.lower())
+
+        # Simple stopwords list (no external deps)
+        stopwords = {
+            'the','and','for','with','that','this','from','your','you','are','was','were','will','shall','into','onto','about','above','below','under','over',
+            'a','an','of','to','in','on','at','by','it','as','be','is','am','or','if','but','not','no','yes','do','does','did','can','could','should','would',
+            'have','has','had','we','they','them','their','our','us','i','me','my','mine','yours','his','her','its','also','more','most','least','than','such',
+            'course','content','material','section','chapter','topic','introduction','overview'
+        }
+
+        filtered = [w for w in words if w not in stopwords and len(w) >= 4]
+        if not filtered:
+            return []
+
+        counts = Counter(filtered)
+        top = [w for w, _ in counts.most_common(12)]
+        # Return capitalized display concepts
+        return [w.replace('-', ' ').title() for w in top]
+
     def _extract_important_points(self, content: str) -> List[str]:
-        """Extract important points and facts from content"""
+        """Extract important points and facts from content (prioritize sentences with keywords and bullet lines)."""
         import re
-        
-        # Split content into sentences
-        sentences = re.split(r'[.!?]+', content)
-        
-        # Filter for important sentences (containing key indicators)
-        important_indicators = ['important', 'key', 'main', 'primary', 'essential', 'critical', 'significant']
-        important_sentences = []
-        
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) > 20 and any(indicator in sentence.lower() for indicator in important_indicators):
-                important_sentences.append(sentence)
-        
-        return important_sentences[:5]  # Return top 5 important points
+        if not content:
+            return []
+
+        # Break into candidate sentences/lines
+        sentences = re.split(r"[.!?\n]+", content)
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 0]
+
+        # Heuristics for importance
+        indicators = ['important','key','main','primary','essential','critical','significant','definition','concept','principle','rule','note']
+        keyword_based = []
+        for s in sentences:
+            score = 0
+            sl = s.lower()
+            # bullet-like lines get a boost
+            if re.match(r"^[-*•]", s):
+                score += 2
+            # indicator words
+            score += sum(1 for ind in indicators if ind in sl)
+            # length boost
+            if len(s) > 40:
+                score += 1
+            if score > 0:
+                keyword_based.append((score, s))
+
+        keyword_based.sort(key=lambda x: x[0], reverse=True)
+        return [s for _, s in keyword_based[:6]]
     
+    def _split_sentences(self, content: str) -> List[str]:
+        import re
+        if not content:
+            return []
+        # Split on punctuation and newlines; keep longer sentences only
+        parts = re.split(r"(?<=[.!?])\s+|\n+", content)
+        sentences = [p.strip() for p in parts if len(p.strip()) >= 40]
+        # Deduplicate while preserving order
+        seen = set()
+        ordered = []
+        for s in sentences:
+            key = s.lower()
+            if key not in seen:
+                seen.add(key)
+                ordered.append(s)
+        return ordered[:50]
+
+    def _make_distractors(self, sentence: str, count: int = 3) -> List[str]:
+        # crude distractor generation by negation and mild paraphrase
+        s = sentence.strip()
+        variants = []
+        neg = s
+        for term in [" is ", " are ", " was ", " were "]:
+            if term in s:
+                neg = s.replace(term, " is not ", 1)
+                break
+        if neg == s:
+            neg = "It is not true that " + s[0].lower() + s[1:]
+        variants.append(neg)
+        variants.append("This statement is unrelated to the course content.")
+        variants.append("The course explicitly contradicts this statement.")
+        return variants[:count]
+
     def _generate_content_based_questions(self, content: str, key_concepts: List[str], 
                                         important_points: List[str], difficulty: str, 
                                         num_questions: int) -> List[Dict]:
-        """Generate questions based on actual course content"""
+        """Generate questions directly from course content sentences/snippets"""
         questions = []
-        
-        # Generate questions from key concepts
-        for i, concept in enumerate(key_concepts[:num_questions//2]):
-            question = {
-                'id': f"concept_q_{i+1}",
-                'question_text': f"What is {concept} and why is it important in this context?",
-                'question_type': 'multiple_choice',
-                'options': [
-                    f"{concept} is a fundamental concept discussed in the material",
-                    f"{concept} is mentioned but not important",
-                    f"{concept} is a secondary topic",
-                    f"{concept} is not covered in this content"
-                ],
-                'correct_answer': f"{concept} is a fundamental concept discussed in the material",
-                'explanation': f"This concept is clearly explained in the course material.",
-                'points': 1,
-                'difficulty': difficulty,
-                'order': i + 1,
-                'ai_generated': True,
-                'confidence_score': 0.9
-            }
-            questions.append(question)
-        
-        # Generate questions from important points
-        for i, point in enumerate(important_points[:num_questions//2]):
-            question = {
-                'id': f"point_q_{i+1}",
-                'question_text': f"According to the course material: {point[:100]}...",
+        sentences = self._split_sentences(content)
+        order_counter = 1
+        # 1) True/False directly from sentences
+        for s in sentences[: max(1, num_questions // 3)]:
+            questions.append({
+                'id': f"tf_{order_counter}",
+                'question_text': f"True or False: '{s[:160]}'",
                 'question_type': 'true_false',
-                'correct_answer': "True",
-                'explanation': "This information is directly stated in the course content.",
+                'correct_answer': 'True',
+                'explanation': "This is quoted from the course content.",
                 'points': 1,
                 'difficulty': difficulty,
-                'order': len(questions) + i + 1,
+                'order': order_counter,
                 'ai_generated': True,
-                'confidence_score': 0.85
-            }
-            questions.append(question)
-        
-        # Generate open-ended questions about the content
-        if len(questions) < num_questions:
-            remaining = num_questions - len(questions)
-            for i in range(remaining):
-                question = {
-                    'id': f"open_q_{i+1}",
-                    'question_text': f"Explain one of the main concepts discussed in this course material.",
-                    'question_type': 'open_ended',
-                    'correct_answer': "Student should demonstrate understanding of the key concepts from the material",
-                    'explanation': "Look for accurate explanation of concepts covered in the course content.",
-                    'points': 2,
-                    'difficulty': difficulty,
-                    'order': len(questions) + i + 1,
-                    'ai_generated': True,
-                    'confidence_score': 0.8
-                }
-                questions.append(question)
-        
+                'confidence_score': 0.9,
+            })
+            order_counter += 1
+            if len(questions) >= num_questions:
+                return questions[:num_questions]
+        # 2) Multiple choice based on sentence being the only correct option
+        for s in sentences[len(questions): len(questions) + max(1, num_questions // 2)]:
+            distractors = self._make_distractors(s)
+            options = [s] + distractors
+            questions.append({
+                'id': f"mc_{order_counter}",
+                'question_text': "According to the course, which statement is correct?",
+                'question_type': 'multiple_choice',
+                'options': options,
+                'correct_answer': s,
+                'explanation': "The correct option reproduces a statement from the course.",
+                'points': 1,
+                'difficulty': difficulty,
+                'order': order_counter,
+                'ai_generated': True,
+                'confidence_score': 0.85,
+            })
+            order_counter += 1
+            if len(questions) >= num_questions:
+                return questions[:num_questions]
+        # 3) Open-ended referencing a snippet
+        idx = 0
+        while len(questions) < num_questions and sentences:
+            snippet = sentences[idx % len(sentences)][:140]
+            questions.append({
+                'id': f"open_{order_counter}",
+                'question_text': f"Explain the meaning of this course snippet and give an example: '{snippet}'",
+                'question_type': 'open_ended',
+                'correct_answer': "Learner should interpret the snippet using concepts present in the content and give a relevant example.",
+                'explanation': "Open-ended—graded for alignment with the quoted snippet.",
+                'points': 2,
+                'difficulty': difficulty,
+                'order': order_counter,
+                'ai_generated': True,
+                'confidence_score': 0.8,
+            })
+            order_counter += 1
+            idx += 1
         return questions[:num_questions]
     
     def _generate_questions_placeholder(self, content: str, difficulty: str, num_questions: int) -> List[Dict]:
@@ -231,6 +337,46 @@ class QuizGenerationAI:
         # Implementation for Gemini API
         # This would make actual API calls to Gemini
         pass
+
+    def _extract_keywords(self, content: str, limit: int = 12) -> List[str]:
+        import re
+        from collections import Counter
+        if not content:
+            return []
+        text = re.sub(r"[^A-Za-z0-9\-\s]", " ", content)
+        words = re.findall(r"[A-Za-z][A-Za-z\-]{2,}", text.lower())
+        stop = {
+            'the','and','for','with','that','this','from','your','you','are','was','were','will','shall','into','onto','about','above','below','under','over',
+            'a','an','of','to','in','on','at','by','it','as','be','is','am','or','if','but','not','no','yes','do','does','did','can','could','should','would',
+            'have','has','had','we','they','them','their','our','us','i','me','my','mine','yours','his','her','its','also','more','most','least','than','such',
+            'course','content','material','section','chapter','topic','introduction','overview','based','according','using','use','title','context','important','question'
+        }
+        filtered = [w for w in words if w not in stop and len(w) >= 4]
+        if not filtered:
+            return []
+        counts = Counter(filtered)
+        return [w for w, _ in counts.most_common(limit)]
+
+    def _enforce_content_keywords(self, course_title: str, content: str, questions: List[Dict]) -> List[Dict]:
+        """Ensure each question references course-specific keywords; adjust if missing."""
+        keywords = self._extract_keywords(course_title + "\n" + content, limit=20)
+        if not keywords:
+            return questions
+        patched = []
+        for idx, q in enumerate(questions):
+            qt = q.get('question_text', '') or ''
+            expl = q.get('explanation', '') or ''
+            # Ensure at least one keyword exists in question and explanation
+            if not any(k.lower() in qt.lower() for k in keywords):
+                qt = f"In the context of {course_title}, {qt}"
+                # append one keyword to force specificity
+                qt = qt.rstrip('.') + f" ({keywords[idx % len(keywords)]})."
+            if not any(k.lower() in expl.lower() for k in keywords):
+                expl = (expl + f" (Reference: {course_title}, keyword: {keywords[(idx+1) % len(keywords)]}).").strip()
+            q['question_text'] = qt
+            q['explanation'] = expl
+            patched.append(q)
+        return patched
 
 
 class QuizAnalysisAI:

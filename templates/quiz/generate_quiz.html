@@ -241,6 +241,26 @@
     </div>
   </main>
 
+  <!-- Result Modal -->
+  <div class="modal fade" id="quizResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Quiz Generated</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="quiz-result-success" class="alert alert-success d-none"></div>
+          <div id="quiz-result-error" class="alert alert-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <a id="open-quiz-btn" href="#" class="btn btn-primary d-none">Open Quiz</a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="{% static 'js/core/popper.min.js' %}"></script>
   <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
   <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
@@ -248,11 +268,73 @@
   <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
   
   <script>
-    document.getElementById('quiz-generation-form').addEventListener('submit', function(e) {
-      // Show processing indicator
-      document.getElementById('processing-card').style.display = 'block';
-      document.getElementById('generate-btn').disabled = true;
-      document.getElementById('generate-btn').innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Generating...';
+    const formEl = document.getElementById('quiz-generation-form');
+    const processingCard = document.getElementById('processing-card');
+    const generateBtn = document.getElementById('generate-btn');
+    const resultModal = new bootstrap.Modal(document.getElementById('quizResultModal'));
+    const resultSuccess = document.getElementById('quiz-result-success');
+    const resultError = document.getElementById('quiz-result-error');
+    const openQuizBtn = document.getElementById('open-quiz-btn');
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    formEl.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      processingCard.style.display = 'block';
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Generating...';
+
+      const formData = new FormData(formEl);
+      formData.append('course_id', '{{ course.id }}');
+
+      try {
+        const resp = await fetch('/quiz/api/generate/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: formData
+        });
+        const data = await resp.json();
+
+        // Reset UI state
+        processingCard.style.display = 'none';
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Generate Quiz with AI';
+
+        // Do not open modal popups; keep UX inline
+        resultSuccess.classList.add('d-none');
+        resultError.classList.add('d-none');
+        openQuizBtn.classList.add('d-none');
+
+        if (data.success) {
+          // Immediately redirect user to start the quiz attempt
+          window.location.href = '/quiz/quiz/' + data.quiz_id + '/start/';
+          return;
+        } else {
+          resultError.textContent = data.error || 'Failed to generate quiz.';
+          resultError.classList.remove('d-none');
+        }
+
+        // No modal popup
+      } catch (err) {
+        processingCard.style.display = 'none';
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="ni ni-settings-gear-65 me-1"></i>Generate Quiz with AI';
+        // Silent fail without modal
+      }
     });
   </script>
 </body>

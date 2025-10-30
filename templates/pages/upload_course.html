@@ -36,6 +36,22 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'workspace_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-archive-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workspaces</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'workshop_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-badge text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workshops</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link active" href="{% url 'upload_course' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
@@ -74,6 +90,17 @@
                 {% csrf_token %}
                 <p class="text-uppercase text-sm">Course Information</p>
                 <div class="row">
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <label for="workspace" class="form-control-label">Workspace</label>
+                      <select class="form-control" name="workspace" id="workspace" required>
+                        {% for ws in workspaces %}
+                        <option value="{{ ws.slug }}">{{ ws.name }}</option>
+                        {% endfor %}
+                      </select>
+                      <small class="text-muted">Courses are grouped inside your workspace</small>
+                    </div>
+                  </div>
                   <div class="col-md-12">
                     <div class="form-group">
                       <label for="title" class="form-control-label">Course Title</label>
