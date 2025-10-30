@@ -69,7 +69,8 @@ def generate_quiz(request, course_id):
                 difficulty_level=difficulty,
                 questions=ai_result['questions'],
                 ai_generated=True,
-                generation_prompt=f"Generate {num_questions} {difficulty} questions from course content"
+                generation_prompt=f"Generate {num_questions} {difficulty} questions from course content",
+                deadline=timezone.now() + timezone.timedelta(minutes=5),
             )
             
             messages.success(request, f'Quiz generated successfully with {len(ai_result["questions"])} questions!')
@@ -390,7 +391,8 @@ def generate_quiz_api(request):
                 quiz_type='auto',
                 difficulty_level=difficulty,
                 questions=ai_result['questions'],
-                ai_generated=True
+                ai_generated=True,
+                deadline=timezone.now() + timezone.timedelta(minutes=5),
             )
             
             return JsonResponse({

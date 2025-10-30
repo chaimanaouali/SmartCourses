@@ -17,7 +17,9 @@
             <div class="card-header d-flex justify-content-between align-items-center pb-0">
               <h5 class="mb-0">Workspace: {{ workspace.name }}</h5>
               <div>
-                <a href="{% url 'workspace_update' workspace.slug %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
+                {% if user.is_authenticated and user == workspace.owner %}
+                  <a href="{% url 'workspace_update' workspace.slug %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
+                {% endif %}
                 <a href="{% url 'upload_course' %}" class="btn btn-primary btn-sm">Add Course</a>
               </div>
             </div>

@@ -114,13 +114,13 @@
                 <h6 class="mb-0">{{ course.title }}</h6>
                 <div class="d-flex gap-2">
                   {% if user.is_authenticated and user == course.instructor %}
-                  <a href="{% url 'update_course' course.id %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
-                  <a href="{% url 'delete_course' course.id %}" class="btn btn-outline-danger btn-sm me-2">Delete</a>
+                    <a href="{% url 'update_course' course.id %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
+                    <a href="{% url 'delete_course' course.id %}" class="btn btn-outline-danger btn-sm me-2">Delete</a>
                   {% endif %}
                   {% if user.is_authenticated and not is_enrolled %}
-                  <a href="{% url 'enroll_course' course.id %}" class="btn btn-primary btn-sm">Enroll in Course</a>
+                    <a href="{% url 'enroll_course' course.id %}" class="btn btn-primary btn-sm">Enroll in Course</a>
                   {% elif user.is_authenticated and is_enrolled %}
-                  <span class="badge bg-success">Enrolled</span>
+                    <span class="badge bg-success">Enrolled</span>
                   {% endif %}
                 </div>
               </div>

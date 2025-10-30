@@ -11,6 +11,7 @@ class Workspace(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workspaces')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    cover_image = models.ImageField(upload_to='workspaces/images/', null=True, blank=True)
 
     class Meta:
         unique_together = ('owner', 'slug')

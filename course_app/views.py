@@ -44,10 +44,23 @@ def home(request):
         course__in=courses
     ).order_by('-created_at')[:6]  # Show last 6 workshops
     
+    # Add totals for dashboard metrics
+    total_courses = Course.objects.filter(is_active=True).count()
+    total_workspaces = Workspace.objects.count()
+    total_workshops = Workshop.objects.count()
+    
+    workspaces_all = Workspace.objects.all().order_by('name')
+    courses_all = Course.objects.filter(is_active=True).order_by('-created_at')
+    
     context = {
         'grouped_courses': workspace_to_courses,
         'recent_workshops': recent_workshops,
         'user': request.user,
+        'total_courses': total_courses,
+        'total_workspaces': total_workspaces,
+        'total_workshops': total_workshops,
+        'workspaces_all': workspaces_all,
+        'courses_all': courses_all,
     }
     return render(request, 'pages/dashboard.html', context)
 
@@ -143,53 +156,62 @@ def workshop_delete(request, workshop_id):
     return render(request, 'pages/workshop_confirm_delete.html', { 'workshop': ws })
 
 
+class WorkspaceForm(ModelForm):
+    class Meta:
+        model = Workspace
+        fields = ['name', 'cover_image']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Web 5EME'}),
+            'cover_image': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+
 @login_required
 def workspace_list(request):
     """List workspaces for the current user"""
     workspaces = Workspace.objects.filter(owner=request.user)
     return render(request, 'pages/workspace_list.html', { 'workspaces': workspaces })
 
-
 @login_required
 def workspace_create(request):
-    """Create a new workspace"""
     if request.method == 'POST':
-        name = request.POST.get('name')
-        if not name:
-            messages.error(request, 'Workspace name is required.')
-            return redirect('workspace_create')
-        base_slug = slugify(name)
-        slug = base_slug
-        i = 2
-        while Workspace.objects.filter(owner=request.user, slug=slug).exists():
-            slug = f"{base_slug}-{i}"
-            i += 1
-        ws = Workspace.objects.create(name=name, slug=slug, owner=request.user)
-        messages.success(request, 'Workspace created successfully!')
-        return redirect('workspace_detail', slug=ws.slug)
-    return render(request, 'pages/workspace_form.html')
-
+        form = WorkspaceForm(request.POST, request.FILES)
+        if form.is_valid():
+            ws = form.save(commit=False)
+            ws.owner = request.user
+            # Slug logic: same as before
+            base_slug = slugify(ws.name)
+            slug = base_slug
+            i = 2
+            while Workspace.objects.filter(owner=request.user, slug=slug).exists():
+                slug = f"{base_slug}-{i}"
+                i += 1
+            ws.slug = slug
+            ws.save()
+            messages.success(request, 'Workspace created successfully!')
+            return redirect('workspace_detail', slug=ws.slug)
+    else:
+        form = WorkspaceForm()
+    return render(request, 'pages/workspace_form.html', {'form': form})
 
 @login_required
 def workspace_detail(request, slug):
-    """View a workspace and its courses"""
-    ws = get_object_or_404(Workspace, slug=slug, owner=request.user)
+    """View a workspace and its courses (publicly accessible)"""
+    ws = get_object_or_404(Workspace, slug=slug)  # No owner filter
     courses = ws.courses.order_by('-created_at')
     return render(request, 'pages/workspace_detail.html', { 'workspace': ws, 'courses': courses })
-
 
 @login_required
 def workspace_update(request, slug):
     ws = get_object_or_404(Workspace, slug=slug, owner=request.user)
     if request.method == 'POST':
-        name = request.POST.get('name', ws.name)
-        if name != ws.name:
-            ws.name = name
-            ws.slug = slugify(name)
-        ws.save()
-        messages.success(request, 'Workspace updated!')
-        return redirect('workspace_detail', slug=ws.slug)
-    return render(request, 'pages/workspace_form.html', { 'workspace': ws })
+        form = WorkspaceForm(request.POST, request.FILES, instance=ws)
+        if form.is_valid():
+            ws = form.save()
+            messages.success(request, 'Workspace updated!')
+            return redirect('workspace_detail', slug=ws.slug)
+    else:
+        form = WorkspaceForm(instance=ws)
+    return render(request, 'pages/workspace_form.html', {'form': form, 'workspace': ws})
 
 
 @login_required
