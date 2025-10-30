@@ -400,3 +400,177 @@ def get_course_quizzes(request, course_id):
         })
     
     return Response({'quizzes': quiz_data})
+
+
+# ----------------------
+# Illustration & Media Views
+# ----------------------
+
+def test_static(request):
+    """Test page for debugging static files"""
+    return render(request, 'pages/test_static.html')
+
+
+@login_required
+def course_illustrations(request, course_id):
+    """View course illustrations gallery"""
+    from .models import Illustration
+    
+    course = get_object_or_404(Course, id=course_id)
+    illustrations = Illustration.objects.filter(course=course, is_active=True)
+    
+    context = {
+        'course': course,
+        'illustrations': illustrations,
+    }
+    return render(request, 'pages/illustrations_gallery.html', context)
+
+
+@login_required
+def generate_illustration(request, course_id):
+    """Generate AI illustration for a course"""
+    from .models import Illustration
+    from ai_services.services import ai_manager
+    
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if user is instructor or has access
+    if course.instructor != request.user and request.user not in course.students.all():
+        messages.error(request, 'You do not have permission to add illustrations to this course.')
+        return redirect('course_detail', course_id=course_id)
+    
+    if request.method == 'POST':
+        description = request.POST.get('description', '')
+        provider = request.POST.get('provider', 'huggingface')  # Default to free Hugging Face
+        tags_str = request.POST.get('tags', '')
+        tags = [tag.strip() for tag in tags_str.split(',') if tag.strip()]
+        
+        if not description:
+            messages.error(request, 'Please provide a description for the illustration.')
+            return redirect('generate_illustration', course_id=course_id)
+        
+        try:
+            # Generate illustration using AI
+            illustration = ai_manager.image_generator.create_illustration_from_description(
+                course=course,
+                description=description,
+                provider=provider,
+                tags=tags
+            )
+            
+            if illustration:
+                messages.success(request, 'Illustration generated successfully!')
+                return redirect('course_illustrations', course_id=course_id)
+            else:
+                messages.error(request, 'Failed to generate illustration. Please check your API keys.')
+        except Exception as e:
+            messages.error(request, f'Error generating illustration: {str(e)}')
+    
+    context = {
+        'course': course,
+    }
+    return render(request, 'pages/generate_illustration.html', context)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_illustration_api(request):
+    """API endpoint to generate illustration"""
+    from .models import Illustration
+    from ai_services.services import ai_manager
+    
+    course_id = request.data.get('course_id')
+    description = request.data.get('description')
+    provider = request.data.get('provider', 'huggingface')  # Default to free Hugging Face
+    tags = request.data.get('tags', [])
+    
+    if not course_id or not description:
+        return Response(
+            {'error': 'course_id and description are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check permissions
+    if course.instructor != request.user and request.user not in course.students.all():
+        return Response(
+            {'error': 'You do not have permission to add illustrations to this course'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        illustration = ai_manager.image_generator.create_illustration_from_description(
+            course=course,
+            description=description,
+            provider=provider,
+            tags=tags
+        )
+        
+        if illustration:
+            return Response({
+                'success': True,
+                'illustration': {
+                    'id': str(illustration.id),
+                    'description': illustration.description,
+                    'image_url': illustration.image_url,
+                    'image_file': illustration.image_file.url if illustration.image_file else None,
+                    'ai_generated': illustration.ai_generated,
+                    'generation_service': illustration.generation_service,
+                    'tags': illustration.tags,
+                }
+            })
+        else:
+            return Response(
+                {'error': 'Failed to generate illustration'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+def get_course_illustrations(request, course_id):
+    """Get all illustrations for a course"""
+    from .models import Illustration
+    
+    course = get_object_or_404(Course, id=course_id)
+    illustrations = Illustration.objects.filter(course=course, is_active=True)
+    
+    illustration_data = []
+    for illustration in illustrations:
+        illustration_data.append({
+            'id': str(illustration.id),
+            'description': illustration.description,
+            'image_url': illustration.image_url,
+            'image_file': illustration.image_file.url if illustration.image_file else None,
+            'ai_generated': illustration.ai_generated,
+            'generation_service': illustration.generation_service,
+            'tags': illustration.tags,
+            'created_at': illustration.created_at,
+        })
+    
+    return Response({'illustrations': illustration_data})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_illustration(request, illustration_id):
+    """Delete an illustration"""
+    from .models import Illustration
+    
+    illustration = get_object_or_404(Illustration, id=illustration_id)
+    course = illustration.course
+    
+    # Check permissions
+    if course.instructor != request.user:
+        return Response(
+            {'error': 'Only the course instructor can delete illustrations'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    illustration.delete()
+    return Response({'success': True, 'message': 'Illustration deleted successfully'})

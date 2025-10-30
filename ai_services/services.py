@@ -1,9 +1,208 @@
 import os
 import json
 import requests
+import base64
+from io import BytesIO
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.utils import timezone
 from course_app.models import Course, AudioQuestion
 from .models import GeneratedContent, AnalyticsService
+
+
+class ImageGenerationService:
+    """Service for AI-powered image generation"""
+    
+    def __init__(self):
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.huggingface_api_key = os.getenv('HUGGINGFACE_API_KEY')
+        self.stability_api_key = os.getenv('STABILITY_API_KEY')
+    
+    def generate_image(self, text_description, provider='openai', size='1024x1024', quality='standard'):
+        """Generate image from text description using specified AI provider
+        
+        Args:
+            text_description (str): Text description to generate image from
+            provider (str): AI provider ('openai', 'huggingface', 'stability')
+            size (str): Image size (e.g., '1024x1024', '512x512')
+            quality (str): Quality level ('standard', 'hd')
+            
+        Returns:
+            dict: {"success": bool, "image_url": str, "image_data": bytes, "error": str}
+        """
+        if provider == 'openai':
+            return self._generate_with_openai(text_description, size, quality)
+        elif provider == 'huggingface':
+            return self._generate_with_huggingface(text_description)
+        elif provider == 'stability':
+            return self._generate_with_stability(text_description)
+        else:
+            return {"success": False, "error": "Unknown provider"}
+    
+    def _generate_with_openai(self, prompt, size='1024x1024', quality='standard'):
+        """Generate image using OpenAI DALL-E API"""
+        if not self.openai_api_key or self.openai_api_key == 'your_openai_api_key_here':
+            return {
+                "success": False,
+                "error": "OpenAI API key not configured",
+                "placeholder": True
+            }
+        
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self.openai_api_key)
+            
+            response = client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=1,
+            )
+            
+            image_url = response.data[0].url
+            
+            # Download the image
+            image_response = requests.get(image_url)
+            if image_response.status_code == 200:
+                return {
+                    "success": True,
+                    "image_url": image_url,
+                    "image_data": image_response.content,
+                    "service": "DALL-E 3 (OpenAI)"
+                }
+            else:
+                return {"success": False, "error": "Failed to download generated image"}
+                
+        except Exception as e:
+            return {"success": False, "error": f"OpenAI generation error: {str(e)}"}
+    
+    def _generate_with_huggingface(self, prompt):
+        """Generate image using Hugging Face Stable Diffusion"""
+        if not self.huggingface_api_key or self.huggingface_api_key == 'your_huggingface_api_key_here':
+            return {
+                "success": False,
+                "error": "Hugging Face API key not configured",
+                "placeholder": True
+            }
+        
+        try:
+            API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+            headers = {"Authorization": f"Bearer {self.huggingface_api_key}"}
+            
+            response = requests.post(
+                API_URL,
+                headers=headers,
+                json={"inputs": prompt}
+            )
+            
+            if response.status_code == 200:
+                return {
+                    "success": True,
+                    "image_data": response.content,
+                    "image_url": "",
+                    "service": "Stable Diffusion XL (Hugging Face)"
+                }
+            else:
+                return {"success": False, "error": f"Hugging Face API error: {response.text}"}
+                
+        except Exception as e:
+            return {"success": False, "error": f"Hugging Face generation error: {str(e)}"}
+    
+    def _generate_with_stability(self, prompt):
+        """Generate image using Stability AI"""
+        if not self.stability_api_key:
+            return {
+                "success": False,
+                "error": "Stability AI API key not configured",
+                "placeholder": True
+            }
+        
+        try:
+            API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+            headers = {
+                "Authorization": f"Bearer {self.stability_api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "text_prompts": [{"text": prompt}],
+                "cfg_scale": 7,
+                "height": 1024,
+                "width": 1024,
+                "samples": 1,
+                "steps": 30,
+            }
+            
+            response = requests.post(API_URL, headers=headers, json=data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                image_data = base64.b64decode(data["artifacts"][0]["base64"])
+                return {
+                    "success": True,
+                    "image_data": image_data,
+                    "image_url": "",
+                    "service": "Stable Diffusion XL (Stability AI)"
+                }
+            else:
+                return {"success": False, "error": f"Stability AI error: {response.text}"}
+                
+        except Exception as e:
+            return {"success": False, "error": f"Stability AI generation error: {str(e)}"}
+    
+    def create_illustration_from_description(self, course, description, provider='openai', tags=None):
+        """Create an Illustration object with AI-generated image
+        
+        Args:
+            course: Course object
+            description (str): Text description for image generation
+            provider (str): AI provider to use
+            tags (list): Optional list of tags
+            
+        Returns:
+            Illustration object or None if generation failed
+        """
+        from course_app.models import Illustration
+        
+        # Generate the image
+        result = self.generate_image(description, provider=provider)
+        
+        if not result["success"]:
+            print(f"Image generation failed: {result.get('error')}")
+            # Return placeholder illustration if API not configured
+            if result.get('placeholder'):
+                illustration = Illustration.objects.create(
+                    course=course,
+                    description=description,
+                    ai_generated=True,
+                    generation_prompt=description,
+                    generation_service=provider,
+                    tags=tags or [],
+                    image_url="https://via.placeholder.com/1024x1024?text=AI+Image+Generation+Pending"
+                )
+                return illustration
+            return None
+        
+        # Create Illustration object
+        illustration = Illustration.objects.create(
+            course=course,
+            description=description,
+            image_url=result.get('image_url', ''),
+            ai_generated=True,
+            generation_prompt=description,
+            generation_service=result.get('service', provider),
+            generation_timestamp=timezone.now(),
+            tags=tags or []
+        )
+        
+        # Save image file if we have image data
+        if result.get('image_data'):
+            image_content = ContentFile(result['image_data'])
+            filename = f"illustration_{illustration.id}.png"
+            illustration.image_file.save(filename, image_content, save=True)
+        
+        return illustration
 
 
 class AIServiceManager:
@@ -11,7 +210,7 @@ class AIServiceManager:
     
     def __init__(self):
         self.whisper_model = None
-        self.image_generator = None
+        self.image_generator = ImageGenerationService()
         self.text_generator = None
         self._initialize_services()
     
@@ -41,14 +240,13 @@ class AIServiceManager:
             print(f"Error generating text response: {e}")
             return "Sorry, I couldn't generate a response at this time."
     
-    def generate_image(self, prompt):
-        """Generate image using Hugging Face"""
+    def generate_image(self, prompt, provider='openai'):
+        """Generate image using ImageGenerationService"""
         try:
-            # Placeholder for image generation
-            return None
+            return self.image_generator.generate_image(prompt, provider=provider)
         except Exception as e:
             print(f"Error generating image: {e}")
-            return None
+            return {"success": False, "error": str(e)}
     
     def recognize_face(self, image_path):
         """Recognize face in image"""

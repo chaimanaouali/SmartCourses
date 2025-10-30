@@ -28,10 +28,10 @@ urlpatterns = [
     
     # Authentication URLs
     path('accounts/login/', auth_views.LoginView.as_view(template_name='pages/sign-in.html'), name='login'),
-    path('accounts/logout/', include('course_app.urls')),  # Use our custom logout view
+    path('accounts/logout/', auth_views.LogoutView.as_view(next_page='/'), name='account_logout')
 ]
 
-# Serve static and media files during development
+# Serve media files during development
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Static files are automatically served by Django's staticfiles app in DEBUG mode

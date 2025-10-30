@@ -13,6 +13,11 @@ urlpatterns = [
     path('course/<uuid:course_id>/learn/', views.start_learning, name='start_learning'),
     path('upload-course/', views.upload_course_content, name='upload_course'),
     
+    # Illustrations
+    path('course/<uuid:course_id>/illustrations/', views.course_illustrations, name='course_illustrations'),
+    path('course/<uuid:course_id>/generate-illustration/', views.generate_illustration, name='generate_illustration'),
+    path('test-static/', views.test_static, name='test_static'),
+    
     # API endpoints
     path('api/audio-question/', views.upload_audio_question, name='upload_audio_question'),
     path('api/audio-question/<uuid:question_id>/status/', views.get_audio_question_status, name='audio_question_status'),
@@ -22,4 +27,9 @@ urlpatterns = [
     path('api/face-login/', views.face_recognition_login, name='face_login'),
     path('api/user-courses/', views.get_user_courses, name='user_courses'),
     path('api/course/<uuid:course_id>/quizzes/', views.get_course_quizzes, name='course_quizzes'),
+    
+    # Illustration API endpoints
+    path('api/generate-illustration/', views.generate_illustration_api, name='generate_illustration_api'),
+    path('api/course/<uuid:course_id>/illustrations/', views.get_course_illustrations, name='get_course_illustrations'),
+    path('api/illustration/<uuid:illustration_id>/delete/', views.delete_illustration, name='delete_illustration'),
 ]
