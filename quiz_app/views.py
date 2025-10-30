@@ -343,9 +343,12 @@ def adaptive_quiz_recommendation(request):
 
 
 @login_required
-@require_http_methods(["POST"])
 def generate_quiz_api(request):
-    """API endpoint for generating quiz via AJAX"""
+    """API endpoint for generating quiz via AJAX or direct access"""
+    if request.method == 'GET':
+        # If accessed via GET (browser), redirect to quiz list
+        return redirect('quiz_app:quiz_list')
+    
     try:
         course_id = request.POST.get('course_id')
         difficulty = request.POST.get('difficulty', 'intermediate')
@@ -393,22 +396,36 @@ def generate_quiz_api(request):
                 ai_generated=True
             )
             
-            return JsonResponse({
-                'success': True,
-                'quiz_id': str(quiz.id),
-                'message': f'Quiz generated with {len(ai_result["questions"])} questions'
-            })
+            # Check if it's an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'quiz_id': str(quiz.id),
+                    'message': f'Quiz generated with {len(ai_result["questions"])} questions'
+                })
+            else:
+                # If it's a regular form submission, redirect to quiz detail
+                messages.success(request, f'Quiz generated with {len(ai_result["questions"])} questions!')
+                return redirect('quiz_app:quiz_detail', quiz_id=quiz.id)
         else:
-            return JsonResponse({
-                'success': False,
-                'error': ai_result.get('error', 'Failed to generate quiz')
-            })
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': ai_result.get('error', 'Failed to generate quiz')
+                })
+            else:
+                messages.error(request, f'Failed to generate quiz: {ai_result.get("error", "Unknown error")}')
+                return redirect('quiz_app:quiz_list')
     
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+        else:
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('quiz_app:quiz_list')
 
 
 @login_required
