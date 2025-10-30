@@ -3,6 +3,23 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
 
+class Workspace(models.Model):
+    """A workspace that groups courses per creator/owner"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=160, unique=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workspaces')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('owner', 'slug')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name}"
+
+
 
 class Course(models.Model):
     """Model representing a course in the educational hub"""
@@ -10,6 +27,7 @@ class Course(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_taught')
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='courses', null=True, blank=True)
     students = models.ManyToManyField(User, related_name='courses_enrolled', blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -105,4 +123,25 @@ class AnalyticsService(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.service_type})"
+
+
+class Workshop(models.Model):
+    """Workshop related to a course"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='workshops')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=200, blank=True)
+    cover_image = models.ImageField(upload_to='workshops/images/', null=True, blank=True)
+    capacity = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workshops_created', null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-scheduled_at', '-created_at']
+
+    def __str__(self):
+        return f"{self.title}"
 

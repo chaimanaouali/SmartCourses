@@ -15,19 +15,191 @@ from rest_framework import status
 import json
 import os
 import uuid
-from .models import Course, AudioQuestion, UserProfile, EngagementSession
+from .models import Course, AudioQuestion, UserProfile, EngagementSession, Workspace, Workshop
+from django.utils.text import slugify
 from ai_services.services import ai_manager, process_audio_question_task, process_course_content_task
 from quiz_app.models import Quiz, QuizAttempt
 
 
 def home(request):
     """Home page with course overview"""
-    courses = Course.objects.filter(is_active=True)[:6]
+    courses = Course.objects.filter(is_active=True)
+    # Group courses by workspace (including unassigned)
+    workspaces = Workspace.objects.filter(courses__in=courses).distinct().order_by('name')
+    workspace_to_courses = []
+    for ws in workspaces:
+        workspace_to_courses.append({
+            'workspace': ws,
+            'courses': list(ws.courses.filter(is_active=True)),
+        })
+    # Unassigned courses (no workspace)
+    unassigned = courses.filter(workspace__isnull=True)
+    if unassigned.exists():
+        workspace_to_courses.insert(0, {
+            'workspace': None,
+            'courses': list(unassigned),
+        })
+    # Get recent workshops for the dashboard
+    recent_workshops = Workshop.objects.filter(
+        course__in=courses
+    ).order_by('-created_at')[:6]  # Show last 6 workshops
+    
     context = {
-        'courses': courses,
+        'grouped_courses': workspace_to_courses,
+        'recent_workshops': recent_workshops,
         'user': request.user,
     }
     return render(request, 'pages/dashboard.html', context)
+
+
+# -------------------- Workshops CRUD --------------------
+from django.forms import ModelForm
+from django import forms
+
+
+class WorkshopForm(ModelForm):
+    class Meta:
+        model = Workshop
+        fields = ['course', 'title', 'description', 'scheduled_at', 'location', 'capacity', 'cover_image']
+        widgets = {
+            'course': forms.Select(attrs={'class': 'form-select'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., UML Basics Workshop'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 6, 'placeholder': 'Overview, agenda, prerequisites...'}),
+            'scheduled_at': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Room 101 or Zoom link'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure datetime-local value renders correctly when editing
+        if self.instance and self.instance.scheduled_at:
+            self.initial['scheduled_at'] = self.instance.scheduled_at.strftime('%Y-%m-%dT%H:%M')
+
+
+@login_required
+def workshop_list(request):
+    """List workshops created by the current user or for their courses"""
+    # Instructor sees their own created workshops; students see all active course workshops
+    created = Workshop.objects.filter(created_by=request.user).select_related('course')
+    return render(request, 'pages/workshop_list.html', { 'workshops': created })
+
+
+@login_required
+def workshop_create(request):
+    """Create a new workshop"""
+    if request.method == 'POST':
+        form = WorkshopForm(request.POST, request.FILES)
+        if form.is_valid():
+            workshop = form.save(commit=False)
+            # Only allow selecting courses the user instructs
+            if workshop.course.instructor != request.user:
+                messages.error(request, 'You can only create workshops for your own courses.')
+            else:
+                workshop.created_by = request.user
+                workshop.save()
+                messages.success(request, 'Workshop created successfully!')
+                return redirect('workshop_detail', workshop_id=workshop.id)
+    else:
+        # Limit course choices to instructor's courses
+        form = WorkshopForm()
+        form.fields['course'].queryset = Course.objects.filter(instructor=request.user)
+    return render(request, 'pages/workshop_form.html', { 'form': form })
+
+
+@login_required
+def workshop_detail(request, workshop_id):
+    ws = get_object_or_404(Workshop, id=workshop_id)
+    hide_crud = request.GET.get('from') == 'dashboard'
+    return render(request, 'pages/workshop_detail.html', { 'workshop': ws, 'hide_crud': hide_crud })
+
+
+@login_required
+def workshop_update(request, workshop_id):
+    ws = get_object_or_404(Workshop, id=workshop_id, created_by=request.user)
+    if request.method == 'POST':
+        form = WorkshopForm(request.POST, request.FILES, instance=ws)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            if updated.course.instructor != request.user:
+                messages.error(request, 'You can only attach workshops to your own courses.')
+            else:
+                updated.save()
+                messages.success(request, 'Workshop updated successfully!')
+                return redirect('workshop_detail', workshop_id=ws.id)
+    else:
+        form = WorkshopForm(instance=ws)
+        form.fields['course'].queryset = Course.objects.filter(instructor=request.user)
+    return render(request, 'pages/workshop_form.html', { 'form': form, 'workshop': ws })
+
+
+@login_required
+def workshop_delete(request, workshop_id):
+    ws = get_object_or_404(Workshop, id=workshop_id, created_by=request.user)
+    if request.method == 'POST':
+        ws.delete()
+        messages.success(request, 'Workshop deleted successfully!')
+        return redirect('workshop_list')
+    return render(request, 'pages/workshop_confirm_delete.html', { 'workshop': ws })
+
+
+@login_required
+def workspace_list(request):
+    """List workspaces for the current user"""
+    workspaces = Workspace.objects.filter(owner=request.user)
+    return render(request, 'pages/workspace_list.html', { 'workspaces': workspaces })
+
+
+@login_required
+def workspace_create(request):
+    """Create a new workspace"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if not name:
+            messages.error(request, 'Workspace name is required.')
+            return redirect('workspace_create')
+        base_slug = slugify(name)
+        slug = base_slug
+        i = 2
+        while Workspace.objects.filter(owner=request.user, slug=slug).exists():
+            slug = f"{base_slug}-{i}"
+            i += 1
+        ws = Workspace.objects.create(name=name, slug=slug, owner=request.user)
+        messages.success(request, 'Workspace created successfully!')
+        return redirect('workspace_detail', slug=ws.slug)
+    return render(request, 'pages/workspace_form.html')
+
+
+@login_required
+def workspace_detail(request, slug):
+    """View a workspace and its courses"""
+    ws = get_object_or_404(Workspace, slug=slug, owner=request.user)
+    courses = ws.courses.order_by('-created_at')
+    return render(request, 'pages/workspace_detail.html', { 'workspace': ws, 'courses': courses })
+
+
+@login_required
+def workspace_update(request, slug):
+    ws = get_object_or_404(Workspace, slug=slug, owner=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name', ws.name)
+        if name != ws.name:
+            ws.name = name
+            ws.slug = slugify(name)
+        ws.save()
+        messages.success(request, 'Workspace updated!')
+        return redirect('workspace_detail', slug=ws.slug)
+    return render(request, 'pages/workspace_form.html', { 'workspace': ws })
+
+
+@login_required
+def workspace_delete(request, slug):
+    ws = get_object_or_404(Workspace, slug=slug, owner=request.user)
+    if request.method == 'POST':
+        ws.delete()
+        messages.success(request, 'Workspace deleted.')
+        return redirect('workspace_list')
+    return render(request, 'pages/workspace_confirm_delete.html', { 'workspace': ws })
 
 
 def signup(request):
@@ -174,28 +346,90 @@ def start_learning(request, course_id):
 @login_required
 def upload_course_content(request):
     """Upload course content (audio/PDF)"""
+    # Ensure user has a workspace
+    user_workspaces = Workspace.objects.filter(owner=request.user)
+    if not user_workspaces.exists():
+        messages.info(request, 'Please create a workspace first.')
+        return redirect('workspace_create')
+
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
         audio_file = request.FILES.get('audio_file')
         pdf_file = request.FILES.get('pdf_file')
+        workspace_slug = request.POST.get('workspace')
+        workspace = get_object_or_404(Workspace, slug=workspace_slug, owner=request.user)
         
         course = Course.objects.create(
             title=title,
             description=description,
             instructor=request.user,
+            workspace=workspace,
             audio_file=audio_file,
             pdf_file=pdf_file
         )
         
-        # Process content asynchronously
+        # Process content (synchronously for now)
         if audio_file:
-            process_course_content_task.delay(str(course.id))
+            process_course_content_task(str(course.id))
         
         messages.success(request, 'Course created successfully!')
         return redirect('course_detail', course_id=course.id)
     
-    return render(request, 'pages/upload_course.html')
+    return render(request, 'pages/upload_course.html', { 'workspaces': user_workspaces })
+
+
+@login_required
+def update_course(request, course_id):
+    """Update an existing course (instructor only)"""
+    course = get_object_or_404(Course, id=course_id)
+    if request.user != course.instructor:
+        messages.error(request, 'You do not have permission to edit this course.')
+        return redirect('course_detail', course_id=course_id)
+
+    if request.method == 'POST':
+        course.title = request.POST.get('title', course.title)
+        course.description = request.POST.get('description', course.description)
+        # Allow moving between user's workspaces
+        workspace_slug = request.POST.get('workspace')
+        if workspace_slug:
+            ws = get_object_or_404(Workspace, slug=workspace_slug, owner=request.user)
+            course.workspace = ws
+
+        # Optional file replacements
+        if 'audio_file' in request.FILES:
+            course.audio_file = request.FILES['audio_file']
+        if 'pdf_file' in request.FILES:
+            course.pdf_file = request.FILES['pdf_file']
+
+        course.save()
+        messages.success(request, 'Course updated successfully!')
+        return redirect('course_detail', course_id=course.id)
+
+    user_workspaces = Workspace.objects.filter(owner=request.user)
+    context = {
+        'course': course,
+        'workspaces': user_workspaces,
+    }
+    return render(request, 'pages/edit_course.html', context)
+
+
+@login_required
+@require_http_methods(["POST", "GET"])
+def delete_course(request, course_id):
+    """Delete a course (instructor only, with confirmation)"""
+    course = get_object_or_404(Course, id=course_id)
+    if request.user != course.instructor:
+        messages.error(request, 'You do not have permission to delete this course.')
+        return redirect('course_detail', course_id=course_id)
+
+    if request.method == 'POST':
+        title = course.title
+        course.delete()
+        messages.success(request, f'Course "{title}" deleted successfully!')
+        return redirect('home')
+
+    return render(request, 'pages/confirm_delete_course.html', { 'course': course })
 
 
 @api_view(['POST'])
@@ -216,8 +450,8 @@ def upload_audio_question(request):
             course_id=course_id if course_id else None
         )
         
-        # Process audio asynchronously
-        process_audio_question_task.delay(str(audio_question.id))
+        # Process audio (synchronously for now)
+        process_audio_question_task(str(audio_question.id))
         
         return Response({
             'question_id': str(audio_question.id),
@@ -400,3 +634,55 @@ def get_course_quizzes(request, course_id):
         })
     
     return Response({'quizzes': quiz_data})
+
+
+# ---------- AI Assistant for Courses (Groq) ----------
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def summarize_course_api(request, course_id):
+    """Generate and store a concise summary for the course using Groq LLM."""
+    course = get_object_or_404(Course, id=course_id)
+
+    # Allow if ?from=workshop or POST JSON/data 'from':'workshop', else instructor/enrolled only
+    can_any_user = request.GET.get('from') == 'workshop' or request.data.get('from') == 'workshop'
+    if not can_any_user and request.user != course.instructor and request.user not in course.students.all():
+        return Response({'error': 'Not allowed'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        summary = ai_manager.summarize_course_text(
+            title=course.title,
+            description=course.description,
+            transcript=course.transcript or ''
+        )
+        # Persist summary on the course
+        course.summary = summary or course.summary
+        course.save(update_fields=['summary'])
+        return Response({'summary': summary})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def explain_course_api(request, course_id):
+    """Answer a user question with explanations based on course content."""
+    course = get_object_or_404(Course, id=course_id)
+
+    can_any_user = request.GET.get('from') == 'workshop' or request.data.get('from') == 'workshop'
+    if not can_any_user and request.user != course.instructor and request.user not in course.students.all():
+        return Response({'error': 'Not allowed'}, status=status.HTTP_403_FORBIDDEN)
+
+    question = request.data.get('question') or request.POST.get('question')
+    if not question:
+        return Response({'error': 'question is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        answer = ai_manager.explain_course_topic(
+            title=course.title,
+            description=course.description,
+            transcript=course.transcript or '',
+            question=question.strip()
+        )
+        return Response({'answer': answer})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -34,6 +34,14 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'workshop_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-badge text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workshops</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'upload_course' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
@@ -104,11 +112,17 @@
             <div class="card-header pb-0">
               <div class="d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">{{ course.title }}</h6>
-                {% if user.is_authenticated and not is_enrolled %}
-                <a href="{% url 'enroll_course' course.id %}" class="btn btn-primary btn-sm">Enroll in Course</a>
-                {% elif user.is_authenticated and is_enrolled %}
-                <span class="badge bg-success">Enrolled</span>
-                {% endif %}
+                <div class="d-flex gap-2">
+                  {% if user.is_authenticated and user == course.instructor %}
+                  <a href="{% url 'update_course' course.id %}" class="btn btn-outline-secondary btn-sm me-2">Edit</a>
+                  <a href="{% url 'delete_course' course.id %}" class="btn btn-outline-danger btn-sm me-2">Delete</a>
+                  {% endif %}
+                  {% if user.is_authenticated and not is_enrolled %}
+                  <a href="{% url 'enroll_course' course.id %}" class="btn btn-primary btn-sm">Enroll in Course</a>
+                  {% elif user.is_authenticated and is_enrolled %}
+                  <span class="badge bg-success">Enrolled</span>
+                  {% endif %}
+                </div>
               </div>
             </div>
             <div class="card-body">
@@ -199,7 +213,20 @@
                       <a href="{% url 'signin' %}" class="btn btn-outline-primary btn-sm w-100 mb-2">Sign In</a>
                       {% endif %}
                       
-                      <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm w-100">Back to Dashboard</a>
+                      <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">Back to Dashboard</a>
+                      {% if user.is_authenticated %}
+                        {% if is_enrolled or user == course.instructor %}
+                        <hr>
+                        <button id="genSummaryBtn" class="btn btn-sm btn-dark w-100 mb-2">Generate AI Summary</button>
+                        <div id="summaryResult" class="small text-muted mb-2" style="display:none;"></div>
+                        <div class="mb-2">
+                          <label class="form-label mb-1">Ask the Assistant</label>
+                          <textarea id="assistantQuestion" class="form-control form-control-sm" rows="3" placeholder="Ask about this course..."></textarea>
+                          <button id="askBtn" class="btn btn-sm btn-primary w-100 mt-2">Ask</button>
+                        </div>
+                        <div id="assistantAnswer" class="small" style="display:none;"></div>
+                        {% endif %}
+                      {% endif %}
                     </div>
                   </div>
 
@@ -229,6 +256,74 @@
   <script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
   <script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
   <script src="{% static 'js/argon-dashboard.min.js' %}"></script>
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    const courseId = "{{ course.id }}";
+    const genSummaryBtn = document.getElementById('genSummaryBtn');
+    const summaryResult = document.getElementById('summaryResult');
+    const askBtn = document.getElementById('askBtn');
+    const assistantQuestion = document.getElementById('assistantQuestion');
+    const assistantAnswer = document.getElementById('assistantAnswer');
+
+    if (genSummaryBtn) {
+      genSummaryBtn.addEventListener('click', async () => {
+        genSummaryBtn.disabled = true; genSummaryBtn.textContent = 'Generating...';
+        summaryResult.style.display = 'none';
+        try {
+          const res = await fetch(`/api/course/${courseId}/summary/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+          });
+          const data = await res.json();
+          summaryResult.textContent = data.summary || data.error || 'No summary produced.';
+          summaryResult.style.display = 'block';
+        } catch (e) {
+          summaryResult.textContent = 'Error generating summary.';
+          summaryResult.style.display = 'block';
+        } finally {
+          genSummaryBtn.disabled = false; genSummaryBtn.textContent = 'Generate AI Summary';
+        }
+      });
+    }
+
+    if (askBtn) {
+      askBtn.addEventListener('click', async () => {
+        const q = (assistantQuestion.value || '').trim();
+        if (!q) { assistantAnswer.style.display = 'block'; assistantAnswer.textContent = 'Please enter a question.'; return; }
+        askBtn.disabled = true; askBtn.textContent = 'Thinking...';
+        assistantAnswer.style.display = 'none';
+        try {
+          const res = await fetch(`/api/course/${courseId}/explain/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ question: q })
+          });
+          const data = await res.json();
+          assistantAnswer.innerHTML = (data.answer || data.error || 'No answer produced.').replaceAll('\n', '<br>');
+          assistantAnswer.style.display = 'block';
+        } catch (e) {
+          assistantAnswer.textContent = 'Error asking assistant.';
+          assistantAnswer.style.display = 'block';
+        } finally {
+          askBtn.disabled = false; askBtn.textContent = 'Ask';
+        }
+      });
+    }
+  </script>
 </body>
 </html>
 

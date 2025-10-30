@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <title>Edit Course - Educational Hub</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+  <link id="pagestyle" href="{% static 'css/argon-dashboard.css' %}?v=2.1.0" rel="stylesheet" />
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+  <div class="min-height-300 bg-dark position-absolute w-100"></div>
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4" id="sidenav-main">
+    <div class="sidenav-header">
+      <a class="navbar-brand m-0" href="{% url 'home' %}">
+        <img src="{% static 'img/logo-ct-dark.png' %}" width="26px" height="26px" class="navbar-brand-img h-100" alt="main_logo">
+        <span class="ms-1 font-weight-bold">Educational Hub</span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content position-relative border-radius-lg">
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="false">
+      <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+            <li class="breadcrumb-item text-sm"><a class="opacity-5 text-white" href="{% url 'home' %}">Pages</a></li>
+            <li class="breadcrumb-item text-sm text-white active" aria-current="page">Edit Course</li>
+          </ol>
+          <h6 class="font-weight-bolder text-white mb-0">Edit: {{ course.title }}</h6>
+        </nav>
+      </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+      <div class="row">
+        <div class="col-md-8 mx-auto">
+          <div class="card">
+            <div class="card-header pb-0">
+              <div class="d-flex align-items-center">
+                <p class="mb-0">Update Course</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <p class="text-uppercase text-sm">Course Information</p>
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <label for="workspace" class="form-control-label">Workspace</label>
+                      <select class="form-control" name="workspace" id="workspace">
+                        {% for ws in workspaces %}
+                        <option value="{{ ws.slug }}" {% if course.workspace and ws.id == course.workspace.id %}selected{% endif %}>{{ ws.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <label for="title" class="form-control-label">Course Title</label>
+                      <input class="form-control" type="text" name="title" id="title" value="{{ course.title }}" required>
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <label for="description" class="form-control-label">Course Description</label>
+                      <textarea class="form-control" name="description" id="description" rows="4" required>{{ course.description }}</textarea>
+                    </div>
+                  </div>
+                </div>
+                <hr class="horizontal dark">
+                <p class="text-uppercase text-sm">Course Content</p>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="audio_file" class="form-control-label">Replace Audio (Optional)</label>
+                      <input class="form-control" type="file" name="audio_file" id="audio_file" accept="audio/*">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="pdf_file" class="form-control-label">Replace PDF (Optional)</label>
+                      <input class="form-control" type="file" name="pdf_file" id="pdf_file" accept=".pdf">
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary">Cancel</a>
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/core/popper.min.js' %}"></script>
+  <script src="{% static 'js/core/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/argon-dashboard.min.js' %}?v=2.1.0"></script>
+</body>
+</html>
+
+

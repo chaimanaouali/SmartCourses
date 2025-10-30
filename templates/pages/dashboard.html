@@ -52,6 +52,14 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'workspace_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-archive-2 text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workspaces</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'upload_course' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
               <i class="ni ni-cloud-upload-96 text-dark text-sm opacity-10"></i>
@@ -73,6 +81,14 @@
               <i class="ni ni-paper-diploma text-dark text-sm opacity-10"></i>
             </div>
             <span class="nav-link-text ms-1">Quizzes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'workshop_list' %}">
+            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="ni ni-badge text-dark text-sm opacity-10"></i>
+            </div>
+            <span class="nav-link-text ms-1">Workshops</span>
           </a>
         </li>
         <li class="nav-item">
@@ -360,17 +376,30 @@
               </div>
             </div>
             <div class="row p-3">
-              {% for course in courses %}
-              <div class="col-md-4 mb-3">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <h6 class="card-title">{{ course.title }}</h6>
-                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <small class="text-muted">By {{ course.instructor.username }}</small>
-                      <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View Course</a>
+              {% for group in grouped_courses %}
+              <div class="col-12 mb-3">
+                <h6 class="text-uppercase text-xs text-muted mb-2">
+                  {% if group.workspace %}Workspace: {{ group.workspace.name }}{% else %}Without Workspace{% endif %}
+                </h6>
+                <div class="row">
+                  {% for course in group.courses %}
+                  <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h6 class="card-title">{{ course.title }}</h6>
+                        <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <small class="text-muted">By {{ course.instructor.username }}</small>
+                          <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-outline-primary">View Course</a>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  {% empty %}
+                  <div class="col-12">
+                    <div class="alert alert-light border">No courses in this workspace.</div>
+                  </div>
+                  {% endfor %}
                 </div>
               </div>
               {% empty %}
@@ -386,6 +415,42 @@
           </div>
         </div>
       </div>
+      
+      <!-- Recent Workshops -->
+      {% if recent_workshops %}
+      <div class="row mt-4">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-header pb-0 p-3">
+              <div class="d-flex justify-content-between">
+                <h6 class="mb-2">Recent Workshops</h6>
+                <a href="{% url 'workshop_list' %}" class="btn btn-primary btn-sm">View All Workshops</a>
+              </div>
+            </div>
+            <div class="row p-3">
+              {% for workshop in recent_workshops %}
+              <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                  <div class="card-body">
+                    {% if workshop.cover_image %}
+                    <img src="{{ workshop.cover_image.url }}" class="img-fluid rounded mb-2" alt="cover" style="max-height:160px; width:100%; object-fit:cover;">
+                    {% endif %}
+                    <h6 class="mb-1">{{ workshop.title }}</h6>
+                    <p class="text-sm text-muted mb-2">Course: {{ workshop.course.title }}</p>
+                    <p class="text-sm text-muted mb-2">Scheduled: {{ workshop.scheduled_at|date:"M d, Y H:i" }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted">By {{ workshop.created_by.username }}</small>
+                      <a href="{% url 'workshop_detail' workshop.id %}?from=dashboard" class="btn btn-sm btn-outline-primary">Open</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
       
       <footer class="footer pt-3">
         <div class="container-fluid">
@@ -426,6 +491,7 @@
   <!-- Voice Recording Script -->
   <script>
     let mediaRecorder;
+    let mediaStream; // keep a reference to stop tracks and avoid browser capture limits
     let audioChunks = [];
     let isRecording = false;
     
@@ -444,6 +510,7 @@
     async function startRecording() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStream = stream;
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
         
@@ -454,6 +521,11 @@
         mediaRecorder.onstop = () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
           uploadAudioQuestion(audioBlob);
+          // Release microphone to avoid hitting browser capture quotas
+          try {
+            mediaStream?.getTracks()?.forEach(t => t.stop());
+          } catch (e) { /* no-op */ }
+          mediaStream = null;
         };
         
         mediaRecorder.start();

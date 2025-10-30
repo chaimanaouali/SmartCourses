@@ -5,6 +5,17 @@ from django.conf import settings
 from course_app.models import Course, AudioQuestion
 from .models import GeneratedContent, AnalyticsService
 
+# Optional heavy deps are imported lazily where possible
+try:
+    import whisper  # optional local fallback
+except Exception:
+    whisper = None
+
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
+
 
 class AIServiceManager:
     """Central manager for all AI services"""
@@ -12,34 +23,100 @@ class AIServiceManager:
     def __init__(self):
         self.whisper_model = None
         self.image_generator = None
-        self.text_generator = None
+        self.text_generator_ready = False
         self._initialize_services()
     
     def _initialize_services(self):
         """Initialize AI services"""
         try:
-            # Initialize services will be added later when packages are installed
-            pass
+            # Whisper (lazy-loaded on first use to reduce startup cost)
+            self.whisper_model = None
+
+            # Gemini
+            api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+            if genai and api_key:
+                genai.configure(api_key=api_key)
+                # We create the model on demand in generate_text_response
+                self.text_generator_ready = True
+            else:
+                self.text_generator_ready = False
         except Exception as e:
             print(f"Error initializing AI services: {e}")
     
     def transcribe_audio(self, audio_file_path):
-        """Transcribe audio using Whisper"""
+        """Transcribe audio.
+        Priority:
+        1) GROQ API (Whisper-large-v3) if GROQ_API_KEY is set
+        2) Local Whisper fallback if installed
+        """
+        groq_key = os.getenv('GROQ_API_KEY')
+        if groq_key and genai is not None:  # genai not required, just using env here
+            try:
+                from groq import Groq
+                client = Groq(api_key=groq_key)
+                # Send file to Groq for transcription
+                with open(audio_file_path, 'rb') as f:
+                    transcription = client.audio.transcriptions.create(
+                        file=(os.path.basename(audio_file_path), f),
+                        model=os.getenv('GROQ_WHISPER_MODEL', 'whisper-large-v3')
+                    )
+                return transcription.text.strip()
+            except Exception as e:
+                print(f"Groq transcription error: {e}")
+                # fall through to local fallback
         try:
-            # Placeholder for Whisper transcription
-            return "This is a placeholder transcription. Install Whisper to enable real transcription."
+            if whisper is None:
+                return "Speech-to-text not configured. Set GROQ_API_KEY or install 'openai-whisper'."
+            if self.whisper_model is None:
+                self.whisper_model = whisper.load_model(os.getenv('WHISPER_MODEL', 'base'))
+            result = self.whisper_model.transcribe(audio_file_path)
+            return result.get('text', '').strip()
+        except FileNotFoundError:
+            return "ffmpeg not found. Please install ffmpeg and ensure it's on your PATH."
         except Exception as e:
             print(f"Error transcribing audio: {e}")
             return None
     
     def generate_text_response(self, prompt, context=""):
-        """Generate text response using Gemini"""
-        try:
-            # Placeholder for Gemini text generation
-            return f"This is a placeholder AI response for: {prompt}. Install Gemini API to enable real responses."
-        except Exception as e:
-            print(f"Error generating text response: {e}")
+        """Generate text response using Groq-hosted models.
+        Priority order (auto-fallback):
+        - GROQ_LLM_MODEL from env (if set)
+        - mixtral-8x7b-32768
+        - llama-3.1-8b-instant
+        - llama-3.3-70b-versatile
+        """
+        # Prefer Groq (and only Groq). Gemini fallback removed to avoid 404s.
+        groq_key = os.getenv('GROQ_API_KEY')
+        if groq_key:
+            from groq import Groq
+            client = Groq(api_key=groq_key)
+            model_candidates = []
+            if os.getenv('GROQ_LLM_MODEL'):
+                model_candidates.append(os.getenv('GROQ_LLM_MODEL'))
+            # Updated available Groq models
+            model_candidates.extend(['mixtral-8x7b-32768', 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'])
+            full_prompt = prompt if not context else f"Context:\n{context}\n\nUser:\n{prompt}"
+            last_error = None
+            for model_name in model_candidates:
+                try:
+                    chat = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": "You are a helpful educational assistant."},
+                            {"role": "user", "content": full_prompt},
+                        ],
+                        temperature=float(os.getenv('LLM_TEMPERATURE', '0.2')),
+                        max_tokens=512,
+                    )
+                    return chat.choices[0].message.content
+                except Exception as e:
+                    last_error = e
+                    continue
+            print(f"Groq text generation error: {last_error}")
             return "Sorry, I couldn't generate a response at this time."
+
+        # No GROQ_API_KEY configured
+        return "Text generation is not configured. Please set GROQ_API_KEY in .env."
     
     def generate_image(self, prompt):
         """Generate image using Hugging Face"""
@@ -49,6 +126,33 @@ class AIServiceManager:
         except Exception as e:
             print(f"Error generating image: {e}")
             return None
+
+    # ---------- Course helpers ----------
+    def summarize_course_text(self, title: str, description: str, transcript: str | None) -> str:
+        """Create a concise, student-friendly summary of a course.
+        Uses Groq LLM with structured instructions.
+        """
+        base_context = f"Course Title: {title}\n\nDescription:\n{description}\n"
+        if transcript:
+            base_context += f"\nTranscript (may be long; prioritize salient points):\n{transcript[:8000]}"
+        prompt = (
+            "Write a concise summary of this course for students."
+            " Focus on learning goals, key modules, and prerequisites."
+            " Output 5-8 bullet points and a short paragraph (≤120 words)."
+        )
+        return self.generate_text_response(prompt, context=base_context)
+
+    def explain_course_topic(self, title: str, description: str, transcript: str | None, question: str) -> str:
+        """Explain a topic or question using the course material as context."""
+        base_context = f"Course Title: {title}\n\nDescription:\n{description}\n"
+        if transcript:
+            base_context += f"\nTranscript excerpt:\n{transcript[:8000]}"
+        prompt = (
+            "Act as a teaching assistant. Explain the user's question clearly,"
+            " with step-by-step reasoning and examples. If math/code is useful,"
+            " include it. End with 3 practice questions. User question: " + question
+        )
+        return self.generate_text_response(prompt, context=base_context)
     
     def recognize_face(self, image_path):
         """Recognize face in image"""
